@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="330" viewBox="0 0 980 330" role="img" aria-label="jevcrawl benchmark scoreboard">
+<title>jevcrawl benchmark scoreboard</title>
+<style>text{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif}</style>
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6D5DFC"/><stop offset="1" stop-color="#22C3EE"/></linearGradient></defs>
+<text x="24.0" y="38.0" fill="#F0F6FC" font-size="22" font-weight="700" text-anchor="start">50 real websites, one question each</text>
+<text x="24.0" y="62.0" fill="#9198A1" font-size="14" font-weight="400" text-anchor="start">WebWalkerQA tasks verified live · same answering LLM and judge for every system · 30-page budget</text>
+<text x="236.0" y="96.0" fill="#F0F6FC" font-size="14" font-weight="600" text-anchor="start">Answered correctly</text>
+<text x="422.0" y="96.0" fill="#F0F6FC" font-size="14" font-weight="600" text-anchor="start">Found the answer page</text>
+<text x="608.0" y="96.0" fill="#F0F6FC" font-size="14" font-weight="600" text-anchor="start">Cost per task</text>
+<text x="776.0" y="96.0" fill="#9198A1" font-size="11" font-weight="400" text-anchor="end">lower is better</text>
+<text x="794.0" y="96.0" fill="#F0F6FC" font-size="14" font-weight="600" text-anchor="start">Time per task</text>
+<text x="962.0" y="96.0" fill="#9198A1" font-size="11" font-weight="400" text-anchor="end">lower is better</text>
+<rect x="12.0" y="112.0" width="956.0" height="52" rx="12" fill="#8B7FFF1F"/>
+<text x="24.0" y="144.0" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="start">jevcrawl</text>
+<rect x="236.0" y="130.0" width="41.6" height="16" rx="8.0" fill="url(#g)"/>
+<text x="287.6" y="143.0" fill="#F0F6FC" font-size="15" font-weight="800" text-anchor="start">40%</text>
+<rect x="422.0" y="130.0" width="56.2" height="16" rx="8.0" fill="url(#g)"/>
+<text x="488.2" y="143.0" fill="#F0F6FC" font-size="15" font-weight="800" text-anchor="start">54%</text>
+<rect x="608.0" y="130.0" width="10.4" height="16" rx="8.0" fill="url(#g)"/>
+<text x="628.4" y="143.0" fill="#F0F6FC" font-size="15" font-weight="800" text-anchor="start">$0.025</text>
+<rect x="794.0" y="130.0" width="40.9" height="16" rx="8.0" fill="url(#g)"/>
+<text x="844.9" y="143.0" fill="#F0F6FC" font-size="15" font-weight="400" text-anchor="start">27.5 s</text>
+<text x="24.0" y="202.0" fill="#F0F6FC" font-size="16" font-weight="500" text-anchor="start">Claude picks every link</text>
+<rect x="236.0" y="188.0" width="31.2" height="16" rx="8.0" fill="#4A535D"/>
+<text x="277.2" y="201.0" fill="#F0F6FC" font-size="15" font-weight="400" text-anchor="start">30%</text>
+<rect x="422.0" y="188.0" width="34.3" height="16" rx="8.0" fill="#4A535D"/>
+<text x="466.3" y="201.0" fill="#F0F6FC" font-size="15" font-weight="400" text-anchor="start">33%</text>
+<rect x="608.0" y="188.0" width="80.7" height="16" rx="8.0" fill="#4A535D"/>
+<text x="698.7" y="201.0" fill="#F0F6FC" font-size="15" font-weight="400" text-anchor="start">$0.194</text>
+<rect x="794.0" y="188.0" width="91.7" height="16" rx="8.0" fill="#4A535D"/>
+<text x="895.7" y="201.0" fill="#F0F6FC" font-size="15" font-weight="400" text-anchor="start">61.7 s</text>
+<text x="24.0" y="260.0" fill="#F0F6FC" font-size="16" font-weight="500" text-anchor="start">Breadth-first crawl</text>
+<rect x="236.0" y="246.0" width="8.3" height="16" rx="8.0" fill="#4A535D"/>
+<text x="254.3" y="259.0" fill="#F0F6FC" font-size="15" font-weight="400" text-anchor="start">8%</text>
+<rect x="422.0" y="246.0" width="11.4" height="16" rx="8.0" fill="#4A535D"/>
+<text x="443.4" y="259.0" fill="#F0F6FC" font-size="15" font-weight="400" text-anchor="start">11%</text>
+<rect x="608.0" y="246.0" width="94.8" height="16" rx="8.0" fill="#4A535D"/>
+<text x="712.8" y="259.0" fill="#F0F6FC" font-size="15" font-weight="400" text-anchor="start">$0.228</text>
+<rect x="794.0" y="246.0" width="33.3" height="16" rx="8.0" fill="#4A535D"/>
+<text x="837.3" y="259.0" fill="#F0F6FC" font-size="15" font-weight="800" text-anchor="start">22.4 s</text>
+<text x="24.0" y="312.0" fill="#9198A1" font-size="12" font-weight="400" text-anchor="start">Bold: best in column. Cost per task includes the answering LLM's tokens at list price; jevcrawl's own Jev calls were $0.011.</text>
+</svg>

@@ -1,0 +1,50 @@
+# Benchmark configuration. The LLMs here are the ONLY place an LLM is used in this repo:
+# jevcrawl itself never calls one. Every system is answered by the same answering model and
+# graded by the same judge, so the crawl/filter step is the only variable.
+#
+# Credentials come from the environment (ANTHROPIC_API_KEY, or an `ant auth login` profile).
+
+[llm]
+provider = "auto"                  # "anthropic" (API key), "claude-code" (your login), or "auto"
+answer_model = "claude-opus-5-5"   # reads each system's context and answers the question
+judge_model = "claude-sonnet-5-5"  # compares the answer to the reference answer
+nav_model = "claude-opus-5-5"      # llm_nav baseline only: picks the next link
+effort = "low"                     # output_config.effort for all three
+max_tokens = 4096                  # per call; adaptive thinking tokens count toward it
+
+# USD per million tokens, used to price the LLM calls. These are the list prices published for
+# these models when this file was written (2026-10-06); edit them if prices change.
+[prices."claude-opus-5-5"]
+input = 4.00
+output = 20.00
+
+[prices."claude-sonnet-5-5"]
+input = 2.00
+output = 10.00
+
+[prices."claude-haiku-5-5"]
+input = 0.10
+output = 0.50
+
+# Used when provider = "claude-code": models are passed to `claude --model` (ids or aliases), and
+# priced like the listed model. Remove a line to reuse [llm]'s model for that role.
+[claude_code]
+answer_model = "claude-opus-5-5"
+judge_model = "claude-sonnet-5-5"
+nav_model = "claude-opus-5-5"
+
+# Claude Code also accepts aliases; say which listed model an alias is priced like.
+[claude_code.price_like]
+opus = "claude-opus-5-5"
+sonnet = "claude-sonnet-5-5"
+haiku = "claude-haiku-5-5"
+
+[limits]
+max_pages = 30           # same page budget for every system
+bfs_depth = 2            # breadth-first baselines: depth from the root URL
+max_context_tokens = 100000  # baselines cut their context here (estimated tokens); flagged when hit
+nav_page_tokens = 3000   # llm_nav: how much of each page the navigator reads
+nav_links = 40           # llm_nav: links shown per page (same cap as jevcrawl's links_per_page)
+
+[tasks]
+seed = 0                 # fixes which tasks a --limit sample draws

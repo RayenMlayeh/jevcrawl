@@ -1,0 +1,79 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jevcrawl"
+dynamic = ["version"]
+description = "MCP server and CLI that crawls websites for AI agents: a small decision model (Jev) picks the pages and passages, so the agent's LLM only reads what answers its question."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Rayen Mlayeh" }]
+requires-python = ">=3.11"
+keywords = ["mcp", "mcp-server", "web-crawler", "web-scraping", "ai-agents", "jev", "typesafe"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Typing :: Typed",
+]
+dependencies = [
+    "httpx[http2]>=0.27",
+    "selectolax>=1.0",
+    "w3lib>=2.1",
+    "mcp>=1.2",
+]
+
+[project.optional-dependencies]
+bench = ["datasets", "anthropic"]
+# Only for the Crawl4AI baseline in bench/; it downloads a browser (run `crawl4ai-setup`).
+crawl4ai = ["crawl4ai"]
+
+[project.urls]
+Homepage = "https://github.com/RayenMlayeh/jevcrawl"
+Issues = "https://github.com/RayenMlayeh/jevcrawl/issues"
+
+[project.scripts]
+jevcrawl = "jevcrawl.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "respx>=0.21",
+    "ruff>=0.5",
+    "mypy>=1.10",
+]
+
+[tool.hatch.version]
+path = "jevcrawl/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["jevcrawl"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["SIM905"]  # word lists are written as one string and split
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "live: talks to the real Jev API; runs only when TYPESAFE_API_KEY is set",
+]
+addopts = "-m 'not live'"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true

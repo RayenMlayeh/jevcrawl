@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="410" viewBox="0 0 980 410" role="img" aria-label="How a jevcrawl crawl works">
+<title>How a jevcrawl crawl works</title>
+<style>text{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif}</style>
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6D5DFC"/><stop offset="1" stop-color="#22C3EE"/></linearGradient></defs>
+<text x="24.0" y="38.0" fill="#1F2328" font-size="22" font-weight="700" text-anchor="start">How a crawl works</text>
+<text x="24.0" y="62.0" fill="#59636E" font-size="14" font-weight="400" text-anchor="start">No LLM in the loop: Jev scores, plain code decides what to fetch and what to keep</text>
+<rect x="20.0" y="92.0" width="144.0" height="164" rx="14" fill="none" stroke="#D1D9E0"/>
+<circle cx="46.0" cy="116" r="13" fill="#7D8894"/>
+<text x="46.0" y="121.0" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">1</text>
+<text x="34.0" y="158.0" fill="#1F2328" font-size="16" font-weight="700" text-anchor="start">Seed</text>
+<text x="34.0" y="184.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">Sitemap URLs that</text>
+<text x="34.0" y="202.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">share words with</text>
+<text x="34.0" y="220.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">the goal</text>
+<path d="M167.0 168.0 l7 6 l-7 6" fill="none" stroke="#7D8894" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="179.2" y="92.0" width="144.0" height="164" rx="14" fill="none" stroke="#D1D9E0"/>
+<circle cx="205.2" cy="116" r="13" fill="#7D8894"/>
+<text x="205.2" y="121.0" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">2</text>
+<text x="193.2" y="158.0" fill="#1F2328" font-size="16" font-weight="700" text-anchor="start">Fetch</text>
+<text x="193.2" y="184.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">The best 4 pages at</text>
+<text x="193.2" y="202.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">a time, HTML only,</text>
+<text x="193.2" y="220.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">5 MB cap</text>
+<path d="M326.2 168.0 l7 6 l-7 6" fill="none" stroke="#7D8894" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="338.4" y="92.0" width="144.0" height="164" rx="14" fill="none" stroke="#D1D9E0"/>
+<circle cx="364.4" cy="116" r="13" fill="#7D8894"/>
+<text x="364.4" y="121.0" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">3</text>
+<text x="352.4" y="158.0" fill="#1F2328" font-size="16" font-weight="700" text-anchor="start">Segment</text>
+<text x="352.4" y="184.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">Passages with</text>
+<text x="352.4" y="202.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">heading path and</text>
+<text x="352.4" y="220.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">character offsets</text>
+<path d="M485.4 168.0 l7 6 l-7 6" fill="none" stroke="#7D8894" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="497.6" y="92.0" width="144.0" height="164" rx="14" fill="none" stroke="#D1D9E0"/>
+<circle cx="523.5999999999999" cy="116" r="13" fill="#7D8894"/>
+<text x="523.6" y="121.0" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">4</text>
+<text x="511.6" y="158.0" fill="#1F2328" font-size="16" font-weight="700" text-anchor="start">Filter for free</text>
+<text x="511.6" y="184.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">Boilerplate, link</text>
+<text x="511.6" y="202.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">lists, login and</text>
+<text x="511.6" y="220.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">cart pages, other</text>
+<text x="511.6" y="238.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">hosts</text>
+<path d="M644.6 168.0 l7 6 l-7 6" fill="none" stroke="#7D8894" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="656.8" y="92.0" width="144.0" height="164" rx="14" fill="#6D5DFC14" stroke="url(#g)" stroke-width="2"/>
+<rect x="750.8" y="106.0" width="38.0" height="20" rx="10" fill="url(#g)"/>
+<text x="769.8" y="120.0" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">Jev</text>
+<circle cx="682.8" cy="116" r="13" fill="url(#g)"/>
+<text x="682.8" y="121.0" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">5</text>
+<text x="670.8" y="158.0" fill="#1F2328" font-size="16" font-weight="700" text-anchor="start">Score</text>
+<text x="670.8" y="184.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">One request per</text>
+<text x="670.8" y="202.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">page: every</text>
+<text x="670.8" y="220.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">passage, every link</text>
+<path d="M803.8 168.0 l7 6 l-7 6" fill="none" stroke="#7D8894" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="816.0" y="92.0" width="144.0" height="164" rx="14" fill="#6D5DFC14" stroke="url(#g)" stroke-width="2"/>
+<rect x="910.0" y="106.0" width="38.0" height="20" rx="10" fill="url(#g)"/>
+<text x="929.0" y="120.0" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">Jev</text>
+<circle cx="842.0" cy="116" r="13" fill="url(#g)"/>
+<text x="842.0" y="121.0" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">6</text>
+<text x="830.0" y="158.0" fill="#1F2328" font-size="16" font-weight="700" text-anchor="start">Stop?</text>
+<text x="830.0" y="184.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">Do the kept</text>
+<text x="830.0" y="202.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">passages answer the</text>
+<text x="830.0" y="220.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">goal?</text>
+<path d="M888.0 256 V290 H251.2 V264" fill="none" stroke="url(#g)" stroke-width="2.5" stroke-dasharray="6 5" stroke-linecap="round"/>
+<path d="M244.2 270 l7 -8 l7 8" fill="none" stroke="#6D5DFC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="429.6" y="277.0" width="280.0" height="26" rx="13" fill="#FFFFFF"/>
+<text x="569.6" y="295.0" fill="#1F2328" font-size="13" font-weight="600" text-anchor="middle">not answered yet: follow the next best links</text>
+<rect x="20.0" y="326.0" width="940.0" height="64" rx="14" fill="#6D5DFC14"/>
+<text x="40.0" y="353.0" fill="#1F2328" font-size="15" font-weight="700" text-anchor="start">Your agent gets</text>
+<text x="40.0" y="374.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="start">Verbatim passages, source URL, heading path, character offsets</text>
+<text x="940" y="356" font-size="22" font-weight="800" text-anchor="end"><tspan fill="#59636E">80,034</tspan><tspan fill="#1F2328"> → </tspan><tspan fill="url(#g)">1,873 tokens</tspan></text>
+<text x="940.0" y="376.0" fill="#59636E" font-size="13" font-weight="400" text-anchor="end">docs.python.org example · $0.0069 · 8.3 s</text>
+</svg>

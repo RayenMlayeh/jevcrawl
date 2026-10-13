@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv*/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+*.egg-info/
+.env
+bench/results/
+# local planning documents, not part of the repo
+*.docx
+jevcrawl-claude-code-prompt.md
