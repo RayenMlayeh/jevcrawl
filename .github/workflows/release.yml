@@ -1,0 +1,17 @@
+# Publishes to PyPI when a GitHub release is published, through PyPI trusted publishing
+# (no token stored): https://docs.pypi.org/trusted-publishers/
+name: release
+on:
+  release:
+    types: [published]
+jobs:
+  pypi:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv build
+      - uses: pypa/gh-action-pypi-publish@release/v1

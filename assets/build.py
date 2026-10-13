@@ -288,12 +288,132 @@ def how_it_works(t: dict[str, str]) -> str:
     return svg(w, h, body, "How a jevcrawl crawl works")
 
 
+# The real docs.python.org crawl from the README (2026-10-12), in the CLI's output format.
+DEMO_COMMAND = [
+    "jevcrawl crawl https://docs.python.org/3/ \\",
+    '    --goal "What does the walrus operator := do and which Python version added it?"',
+]
+DEMO_OUTPUT = [
+    # text, colour key
+    ("[kept 0.97] https://docs.python.org/3/whatsnew/3.8.html [307:580]", "accent"),
+    ("  (What\u2019s New In Python 3.8 > New Features > Assignment expressions)", "dim"),
+    ("  There is new syntax := that assigns values to variables as part of a larger", "fg"),
+    ("  expression. It is affectionately known as “the walrus operator” due to its", "fg"),
+    ("  resemblance to the eyes and tusks of a walrus.", "fg"),
+    ("  ⋮", "dim"),
+    ("", "fg"),
+    ("pages=6 stopped=answered tokens=80,034->1,873 jev_calls=11 cost=$0.0069 time=8.3s", "ok"),
+]
+MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace"
+
+
+def _cycle(values: list[str], times: list[float], period: float, attr: str = "opacity") -> str:
+    key_times = ";".join(f"{t / period:.4f}" for t in times)
+    return (
+        f'<animate attributeName="{attr}" values="{";".join(values)}" keyTimes="{key_times}" '
+        f'dur="{period}s" repeatCount="indefinite" calcMode="discrete"/>'
+    )
+
+
+def demo() -> str:
+    """A looping terminal: the command is typed, then the result appears."""
+    from html import escape
+
+    w, h, period, x, lh = 980, 400, 16.0, 28, 23
+    colors = {"fg": "#E6EDF3", "dim": "#7D8590", "accent": "#A5A0FF", "ok": "#3FD0F0"}
+    body = rect(0, 0, w, h, 14, "#0D1117", ' stroke="#30363D"')
+    for i, dot in enumerate(["#FF5F57", "#FEBC2E", "#28C840"]):
+        body += f'<circle cx="{24 + i * 20}" cy="22" r="6" fill="{dot}"/>\n'
+    body += (
+        f'<text x="{w / 2}" y="27" fill="#7D8590" font-size="13" text-anchor="middle">'
+        "jevcrawl · replay of a real crawl</text>\n"
+    )
+    body += f"<style>.m text{{font-family:{MONO};font-size:14px;white-space:pre}}</style>\n"
+    body += '<g class="m">\n'
+    y, start, char_s = 70.0, 0.6, 0.028
+    for i, line in enumerate(DEMO_COMMAND):  # typed one character at a time
+        shown = ("$ " if i == 0 else "") + line
+        prefix = 2 if i == 0 else 0
+        steps = list(range(prefix, len(shown) + 1))
+        times = [0.0] + [start + k * char_s for k in range(len(steps))] + [period - 0.4]
+        clip = f"c{i}"  # a clip that widens one character at a time
+        cw = 8.45  # monospace advance at 14px; the last frame reveals the whole line anyway
+        widths = ["0"] + [f"{n * cw:.1f}" for n in steps[:-1]] + [str(w)] + ["0"]
+        body += (
+            f'<clipPath id="{clip}"><rect x="{x}" y="{y - 16}" height="22" width="0">'
+            f"{_cycle(widths, times, period, 'width')}</rect></clipPath>\n"
+            f'<text x="{x}" y="{y}" fill="{colors["fg"]}" clip-path="url(#{clip})">'
+            f"{escape(shown)}</text>\n"
+        )
+        start = times[-2] + 0.25
+        y += lh
+    y += lh / 2
+    t = start + 1.2  # the crawl itself
+    bold = ' font-weight="700"'
+    for line, color in DEMO_OUTPUT:
+        times = [0.0, t, period - 0.4]
+        body += (
+            f'<text x="{x}" y="{y}" fill="{colors[color]}" opacity="0"'
+            f"{bold if color == 'ok' else ''}>{escape(line)}"
+            f"{_cycle(['0', '1', '0'], times, period)}</text>\n"
+        )
+        t += 0.12
+        y += lh
+    prompt_t = t + 0.3
+    body += (
+        f'<text x="{x}" y="{y + 8}" fill="{colors["fg"]}" opacity="0">$ '
+        f"{_cycle(['0', '1', '0'], [0.0, prompt_t, period - 0.4], period)}</text>\n"
+    )
+    blink = [0.0, prompt_t] + [prompt_t + 0.5 * k for k in range(1, 30) if prompt_t + 0.5 * k
+                               < period - 0.4] + [period - 0.4]  # fmt: skip
+    states = ["0"] + ["1" if k % 2 == 0 else "0" for k in range(len(blink) - 2)] + ["0"]
+    body += (
+        f'<rect x="{x + 18}" y="{y - 6}" width="9" height="17" fill="{ACCENT_B}" opacity="0">'
+        f"{_cycle(states, blink, period)}</rect>\n</g>\n"
+    )
+    # The point of it, once the result is in.
+    callout = (
+        f'<g opacity="0">{_cycle(["0", "1", "0"], [0.0, t + 0.6, period - 0.4], period)}'
+        + rect(w - 372, h - 70, 344, 46, 23, "url(#g)")
+        + text(w - 200, h - 41, "80,034 → 1,873 tokens for $0.0069", "#fff", 16, 700, "middle")
+        + "</g>\n"
+    )
+    return svg(w, h, body + callout, "jevcrawl demo: a real crawl of docs.python.org")
+
+
+def social() -> str:
+    """GitHub's social preview card (Settings > Social preview), 1280x640."""
+    w, h = 1280, 640
+    body = rect(0, 0, w, h, 0, "#0D1117")
+    body += '<circle cx="1180" cy="40" r="360" fill="url(#g)" opacity=".16"/>\n'
+    body += mark(96, 112, 150)
+    body += (
+        '<text x="276" y="222" font-size="104" font-weight="800" letter-spacing="-3">'
+        '<tspan fill="url(#g)">jev</tspan><tspan fill="#F0F6FC">crawl</tspan></text>\n'
+    )
+    body += text(96, 340, "The web crawler for AI agents that finds", "#F0F6FC", 44, 700)
+    body += text(96, 396, "the answer, not just pages.", "#F0F6FC", 44, 700)
+    stats = [
+        ("2x", "answer pages found vs Crawl4AI"),
+        ("10x", "cheaper per answer than Claude crawling"),
+        ("MCP", "Claude Code, Cursor, Desktop"),
+    ]
+    for i, (big, small) in enumerate(stats):
+        x = 96 + i * 370
+        body += text(x, 500, big, ACCENT_B if i != 1 else "#A5A0FF", 56, 800)
+        body += text(x, 540, small, "#9198A1", 22)
+    body += text(96, 600, "github.com/RayenMlayeh/jevcrawl · Apache-2.0", "#6E7781", 20)
+    return svg(w, h, body, "jevcrawl")
+
+
 def main() -> None:
     for name, t in THEMES.items():
         for stem, draw in [("logo", logo), ("scoreboard", scoreboard), ("cost", cost_per_answer),
                            ("crawl4ai", crawl4ai), ("how", how_it_works)]:  # fmt: skip
             (OUT / f"{stem}-{name}.svg").write_text(draw(t), encoding="utf-8")
     (OUT / "mark.svg").write_text(svg(120, 120, mark(0, 0, 120), "jevcrawl"), encoding="utf-8")
+    (OUT / "demo.svg").write_text(demo(), encoding="utf-8")
+    (OUT / "social.svg").write_text(social(), encoding="utf-8")
 
 
 if __name__ == "__main__":

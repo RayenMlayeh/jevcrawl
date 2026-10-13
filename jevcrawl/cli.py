@@ -100,11 +100,15 @@ def format_result(command: str, data: dict[str, Any]) -> str:
             lines.append("(no relevant blocks found)")
     s = data["stats"]
     lines.append("")
-    lines.append(
-        f"pages={s['pages_fetched']} stopped={s['stopped_because']} "
-        f"jev_calls={s['jev_calls']} cache_hits={s['cache_hits']} "
-        f"cost=${s['jev_cost_usd']:.6f} model={s['model']} degraded={s['degraded']}"
-    )
+    summary = f"pages={s['pages_fetched']} stopped={s['stopped_because']}"
+    if "tokens_raw" in s:
+        summary += f" tokens={s['tokens_raw']:,}->{s['tokens_returned']:,}"
+    summary += f" jev_calls={s['jev_calls']} cost=${s['jev_cost_usd']:.4f}"
+    if "elapsed_seconds" in s:
+        summary += f" time={s['elapsed_seconds']:.1f}s"
+    if s["degraded"]:
+        summary += f" degraded ({s['degraded_reason']})"
+    lines.append(summary)
     if s["needs_js_urls"]:
         lines.append(f"needs JavaScript (not rendered): {', '.join(s['needs_js_urls'])}")
     return "\n".join(lines)
