@@ -386,23 +386,24 @@ def social() -> str:
     w, h = 1280, 640
     body = rect(0, 0, w, h, 0, "#0D1117")
     body += '<circle cx="1180" cy="40" r="360" fill="url(#g)" opacity=".16"/>\n'
-    body += mark(96, 112, 150)
+    body += mark(96, 84, 150)
     body += (
-        '<text x="276" y="222" font-size="104" font-weight="800" letter-spacing="-3">'
+        '<text x="276" y="194" font-size="104" font-weight="800" letter-spacing="-3">'
         '<tspan fill="url(#g)">jev</tspan><tspan fill="#F0F6FC">crawl</tspan></text>\n'
     )
-    body += text(96, 340, "The web crawler for AI agents that finds", "#F0F6FC", 44, 700)
-    body += text(96, 396, "the answer, not just pages.", "#F0F6FC", 44, 700)
+    body += text(96, 312, "The web crawler for AI agents that finds", "#F0F6FC", 44, 700)
+    body += text(96, 366, "the answer, not just pages.", "#F0F6FC", 44, 700)
     stats = [
-        ("2x", "answer pages found vs Crawl4AI"),
-        ("10x", "cheaper per answer than Claude crawling"),
-        ("MCP", "Claude Code, Cursor, Desktop"),
+        ("2x", ["answer pages found", "vs Crawl4AI"]),
+        ("10x", ["cheaper per answer", "than Claude crawling"]),
+        ("MCP", ["Claude Code, Cursor,", "Claude Desktop"]),
     ]
-    for i, (big, small) in enumerate(stats):
+    for i, (big, lines) in enumerate(stats):
         x = 96 + i * 370
-        body += text(x, 500, big, ACCENT_B if i != 1 else "#A5A0FF", 56, 800)
-        body += text(x, 540, small, "#9198A1", 22)
-    body += text(96, 600, "github.com/RayenMlayeh/jevcrawl · Apache-2.0", "#6E7781", 20)
+        body += text(x, 462, big, ACCENT_B if i != 1 else "#A5A0FF", 56, 800)
+        for k, line in enumerate(lines):
+            body += text(x, 500 + k * 28, line, "#9198A1", 22)
+    body += text(96, 598, "github.com/RayenMlayeh/jevcrawl · Apache-2.0", "#6E7781", 20)
     return svg(w, h, body, "jevcrawl")
 
 
