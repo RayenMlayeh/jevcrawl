@@ -1,8 +1,8 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/RayenMlayeh/jevcrawl/main/assets/logo-dark.svg">
-  <img alt="jevcrawl" src="https://raw.githubusercontent.com/RayenMlayeh/jevcrawl/main/assets/logo-light.svg" width="400">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
+  <img alt="jevcrawl" src="assets/logo-light.svg" width="400">
 </picture>
 
 ### The web crawler for AI agents that finds the answer, not just pages.
@@ -12,8 +12,8 @@ A small decision model picks every link and every passage, so your agent's LLM r
 
 [![PyPI](https://img.shields.io/pypi/v/jevcrawl?color=6D5DFC)](https://pypi.org/project/jevcrawl/)
 [![CI](https://github.com/RayenMlayeh/jevcrawl/actions/workflows/ci.yml/badge.svg)](https://github.com/RayenMlayeh/jevcrawl/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-Apache--2.0-6D5DFC)](https://github.com/RayenMlayeh/jevcrawl/blob/main/LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)](https://github.com/RayenMlayeh/jevcrawl/blob/main/pyproject.toml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-6D5DFC)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)](pyproject.toml)
 [![MCP server](https://img.shields.io/badge/MCP-server-22C3EE)](https://modelcontextprotocol.io)
 [![Benchmark](https://img.shields.io/badge/WebWalkerQA-40%25_vs_30%25_for_Claude-6D5DFC)](#benchmarks)
 [![Cost](https://img.shields.io/badge/cost-%240.025%2Ftask-2EA043)](#cost-and-privacy)
@@ -26,12 +26,12 @@ A small decision model picks every link and every passage, so your agent's LLM r
 <br>
 
 <p align="center">
-  <img alt="Demo: jevcrawl crawls docs.python.org for 'What does the walrus operator := do and which Python version added it?' and returns the What's New In Python 3.8 passage. 6 pages, 80,034 tokens reduced to 1,873, $0.0069, 8.3 seconds." src="https://raw.githubusercontent.com/RayenMlayeh/jevcrawl/main/assets/demo.svg" width="100%">
+  <img alt="Demo: jevcrawl crawls docs.python.org for 'What does the walrus operator := do and which Python version added it?' and returns the What's New In Python 3.8 passage. 6 pages, 80,034 tokens reduced to 1,873, $0.0069, 8.3 seconds." src="assets/demo.svg" width="100%">
 </p>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/RayenMlayeh/jevcrawl/main/assets/scoreboard-dark.svg">
-  <img alt="On 50 WebWalkerQA tasks jevcrawl answered 40% correctly and found the answer page 54% of the time for $0.025 per task, against 30%, 33% and $0.194 when Claude picks every link and 8%, 11% and $0.228 for a breadth-first crawl." src="https://raw.githubusercontent.com/RayenMlayeh/jevcrawl/main/assets/scoreboard-light.svg" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/scoreboard-dark.svg">
+  <img alt="On 50 WebWalkerQA tasks jevcrawl answered 40% correctly and found the answer page 54% of the time for $0.025 per task, against 30%, 33% and $0.194 when Claude picks every link and 8%, 11% and $0.228 for a breadth-first crawl." src="assets/scoreboard-light.svg" width="100%">
 </picture>
 
 ## Why jevcrawl
@@ -77,7 +77,7 @@ claude mcp add jevcrawl -e TYPESAFE_API_KEY=<your key> -- uvx jevcrawl
 Then ask your agent something like *"Use jevcrawl to find which Python version added the walrus
 operator, starting from docs.python.org"*. Check the setup with
 `uvx jevcrawl doctor`. Agents that load skills
-can also use [`skills/jevcrawl/SKILL.md`](https://github.com/RayenMlayeh/jevcrawl/blob/main/skills/jevcrawl/SKILL.md).
+can also use [`skills/jevcrawl/SKILL.md`](skills/jevcrawl/SKILL.md).
 
 ## Benchmarks
 
@@ -86,8 +86,8 @@ What each one collects goes to the **same answering LLM**, and the **same judge*
 answer, so the crawler is the only thing that changes.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/RayenMlayeh/jevcrawl/main/assets/cost-dark.svg">
-  <img alt="Cost of one correct answer: jevcrawl $0.06, Claude picking every link $0.65, breadth-first crawl $2.85." src="https://raw.githubusercontent.com/RayenMlayeh/jevcrawl/main/assets/cost-light.svg" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/cost-dark.svg">
+  <img alt="Cost of one correct answer: jevcrawl $0.06, Claude picking every link $0.65, breadth-first crawl $2.85." src="assets/cost-light.svg" width="100%">
 </picture>
 
 ### jevcrawl vs Crawl4AI
@@ -97,8 +97,8 @@ for LLMs. Its `BestFirstCrawlingStrategy` with a keyword scorer is its way to cr
 without an LLM, so we compared the two on whether they fetch the page that holds the answer.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/RayenMlayeh/jevcrawl/main/assets/crawl4ai-dark.svg">
-  <img alt="On 20 tasks jevcrawl found an answer page 10 times and Crawl4AI 5 times; every answer page 5 vs 2; median crawl time 29 s vs 43 s; sites that failed to load 0 vs 3. jevcrawl found 6 answer pages Crawl4AI missed, Crawl4AI found 1 jevcrawl missed." src="https://raw.githubusercontent.com/RayenMlayeh/jevcrawl/main/assets/crawl4ai-light.svg" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/crawl4ai-dark.svg">
+  <img alt="On 20 tasks jevcrawl found an answer page 10 times and Crawl4AI 5 times; every answer page 5 vs 2; median crawl time 29 s vs 43 s; sites that failed to load 0 vs 3. jevcrawl found 6 answer pages Crawl4AI missed, Crawl4AI found 1 jevcrawl missed." src="assets/crawl4ai-light.svg" width="100%">
 </picture>
 
 ### Where the numbers come from
@@ -106,14 +106,14 @@ without an LLM, so we compared the two on whether they fetch the page that holds
 | | |
 |---|---|
 | **Tasks** | [WebWalkerQA](https://huggingface.co/datasets/callanwu/WebWalkerQA) from *WebWalker: Benchmarking LLMs in Web Traversal* (Wu et al., Alibaba Tongyi Lab, [ACL 2025](https://arxiv.org/abs/2501.07572)): questions whose answers sit several clicks deep in real websites (conferences, universities, organizations, games), in English and Chinese. |
-| **Task selection** | Each task was re-checked live before the run: the site and answer page still load and still contain the reference answer. Tasks looked at while developing are excluded ([`bench/tasks/seen-ids.txt`](https://github.com/RayenMlayeh/jevcrawl/blob/main/bench/tasks/seen-ids.txt)). |
+| **Task selection** | Each task was re-checked live before the run: the site and answer page still load and still contain the reference answer. Tasks looked at while developing are excluded ([`bench/tasks/seen-ids.txt`](bench/tasks/seen-ids.txt)). |
 | **Accuracy run** | 50 tasks, 2026-10-12. Answering model `claude-opus-5-5`, judge `claude-sonnet-5-5`. |
 | **Crawl4AI run** | 20 different tasks, 2026-10-13, Crawl4AI 0.9.4. Crawl only, no LLM: did the crawler fetch the gold page? In the accuracy run, whether a system fetched the gold page closely tracked whether it answered correctly. |
 | **Baselines** | *Claude picks every link*: Claude reads each page and chooses the next link. *Breadth-first*: every page to depth 2. All systems share jevcrawl's fetcher and remove navigation and footers. |
 | **Costs** | Jev cost is billed and exact. LLM costs are token counts at list price. |
 | **Caveats** | 50 and 20 tasks are small samples: the cost gap is large and stable, the accuracy gap less so. Crawl4AI drives a real browser, jevcrawl does not run JavaScript. |
 
-The benchmark code and how to reproduce every number: [`bench/`](https://github.com/RayenMlayeh/jevcrawl/blob/main/bench/README.md).
+The benchmark code and how to reproduce every number: [`bench/`](bench/README.md).
 
 ## Tools
 
@@ -167,8 +167,8 @@ jevcrawl doctor
 ## How it works
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/RayenMlayeh/jevcrawl/main/assets/how-dark.svg">
-  <img alt="A crawl in six steps: seed from the sitemap, fetch the best 4 pages, segment them into passages, filter boilerplate for free, Jev scores every passage and link in one request per page, Jev checks whether the kept passages answer the goal. If not, it follows the next best links. The docs.python.org example turned 80,034 tokens of pages into 1,873 tokens for $0.0069 in 8.3 s." src="https://raw.githubusercontent.com/RayenMlayeh/jevcrawl/main/assets/how-light.svg" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/how-dark.svg">
+  <img alt="A crawl in six steps: seed from the sitemap, fetch the best 4 pages, segment them into passages, filter boilerplate for free, Jev scores every passage and link in one request per page, Jev checks whether the kept passages answer the goal. If not, it follows the next best links. The docs.python.org example turned 80,034 tokens of pages into 1,873 tokens for $0.0069 in 8.3 s." src="assets/how-light.svg" width="100%">
 </picture>
 
 - **Jev decides, it does not write.** [Jev](https://typesafe.ai) returns a probability per
@@ -193,7 +193,7 @@ jevcrawl doctor
 | `JEVCRAWL_CACHE_DIR` | answer cache | `~/.jevcrawl/cache` |
 
 Everything else (thresholds, links per page, concurrency) has a measured default in
-[`jevcrawl/config.py`](https://github.com/RayenMlayeh/jevcrawl/blob/main/jevcrawl/config.py), and Python callers can pass their own `Config`.
+[`jevcrawl/config.py`](jevcrawl/config.py), and Python callers can pass their own `Config`.
 
 ## Cost and privacy
 
@@ -223,9 +223,9 @@ TYPESAFE_API_KEY=... uv run pytest -m live -s    # one tiny real request, a frac
 ```
 
 Tests never touch the network or spend money; anything that does is marked `live`. The README
-charts are drawn by [`assets/build.py`](https://github.com/RayenMlayeh/jevcrawl/blob/main/assets/build.py) from the measured numbers. Issues and
+charts are drawn by [`assets/build.py`](assets/build.py) from the measured numbers. Issues and
 pull requests are welcome; please report security problems as described in
-[SECURITY.md](https://github.com/RayenMlayeh/jevcrawl/blob/main/SECURITY.md).
+[SECURITY.md](SECURITY.md).
 
 ## Acknowledgments
 
@@ -237,4 +237,4 @@ pull requests are welcome; please report security problems as described in
 
 ## License
 
-[Apache-2.0](https://github.com/RayenMlayeh/jevcrawl/blob/main/LICENSE)
+[Apache-2.0](LICENSE)

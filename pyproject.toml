@@ -1,12 +1,11 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-fancy-pypi-readme"]
 build-backend = "hatchling.build"
 
 [project]
 name = "jevcrawl"
-dynamic = ["version"]
+dynamic = ["version", "readme"]
 description = "MCP server and CLI that crawls websites for AI agents: a small decision model (Jev) picks the pages and passages, so the agent's LLM only reads what answers its question."
-readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "Rayen Mlayeh" }]
@@ -53,6 +52,21 @@ dev = [
 
 [tool.hatch.version]
 path = "jevcrawl/__init__.py"
+
+# PyPI shows the README too: make its relative image paths and links absolute there.
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
+path = "README.md"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+pattern = '(src|srcset)="(assets/[^"]+)"'
+replacement = '\1="https://raw.githubusercontent.com/RayenMlayeh/jevcrawl/main/\2"'
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+pattern = '\]\((?!https?:|#)([^)\s]+)\)'
+replacement = '](https://github.com/RayenMlayeh/jevcrawl/blob/main/\1)'
 
 [tool.hatch.build.targets.wheel]
 packages = ["jevcrawl"]
