@@ -51,7 +51,8 @@ async def test_end_to_end_finds_the_refund_sentence_and_stops_answered(world, co
     result = await crawl(GOAL, BASE + "/", config)
     data = result.to_dict()
 
-    assert paths(respx_mock) == ["/", "/help/returns"]  # returns before jobs; no robots.txt
+    # robots.txt first, then returns before jobs
+    assert paths(respx_mock) == ["/robots.txt", "/", "/help/returns"]
     assert routes["/jobs"].call_count == 0 and routes["/help/shipping"].call_count == 0
     assert data["stats"]["stopped_because"] == "answered"
     refund = [b for b in data["blocks"] if REFUND in b["text"]]
@@ -83,10 +84,10 @@ async def test_stats_report_cost_model_and_savings(world, config):
     assert stats.elapsed_seconds >= 0
 
 
-async def test_robots_txt_is_never_requested(world, config):
+async def test_robots_txt_is_read_once_per_host(world, config):
     routes, _ = world
     await crawl(GOAL, BASE + "/", config)
-    assert routes["/robots.txt"].call_count == 0
+    assert routes["/robots.txt"].call_count >= 1
     ua = routes["/"].calls.last.request.headers["user-agent"]
     assert ua.startswith("jevcrawl/")
 
@@ -145,14 +146,24 @@ async def test_missing_key_is_a_clear_error_before_any_request(world, config):
 # ------------------------------------------------------------------ expected errors
 
 
-async def test_invalid_start_urls_and_robots_is_ignored(world, config):
+async def test_invalid_start_urls_and_robots_rules(world, config):
     routes, _ = world
     for bad in ("ftp://x.example/", "not a url", "/relative"):
         with pytest.raises(CrawlError) as info:
             await crawl(GOAL, bad, config)
         assert info.value.code == "invalid_url"
-    result = await crawl(GOAL, BASE + "/private/area", config)  # robots.txt is not consulted
+    with pytest.raises(CrawlError) as info:
+        await crawl(GOAL, BASE + "/private/area", config)
+    assert info.value.code == "blocked_by_robots" and routes["/private/area"].call_count == 0
+    ignoring = replace(config, respect_robots=False)  # the opt-out fetches it
+    result = await crawl(GOAL, BASE + "/private/area", ignoring)
     assert result.stats.pages_fetched == 1 and routes["/private/area"].call_count == 1
+
+
+async def test_disallowed_links_are_never_fetched(world, config):
+    routes, _ = world
+    await crawl(GOAL, BASE + "/", config)
+    assert routes["/private/area"].call_count == 0
 
 
 async def test_max_pages_and_frontier_empty(world, config):

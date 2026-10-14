@@ -32,3 +32,10 @@ def test_thresholds_match_the_calibrated_values():
     t = Thresholds()
     assert (t.keep, t.uncertain_low, t.stop, t.link_floor) == (0.35, 0.20, 0.85, 0.10)
     assert (t.hub_weight, t.page_weight, t.depth_decay) == (0.6, 0.2, 0.9)
+
+
+def test_respect_robots_is_on_unless_switched_off():
+    assert load_config(env={}).respect_robots is True
+    for off in ("0", "false", "No", "OFF"):
+        assert load_config(env={"JEVCRAWL_RESPECT_ROBOTS": off}).respect_robots is False
+    assert load_config(env={"JEVCRAWL_RESPECT_ROBOTS": "1"}).respect_robots is True

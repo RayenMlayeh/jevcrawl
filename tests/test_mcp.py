@@ -98,6 +98,7 @@ async def test_expected_errors_are_payloads_not_exceptions(world, url, code):
 
 
 async def test_unreachable_start_page_is_a_payload(world, respx_mock):
+    respx_mock.get("https://down.example/robots.txt").mock(side_effect=httpx.ConnectError("boom"))
     respx_mock.get("https://down.example/").mock(side_effect=httpx.ConnectError("boom"))
     data = await mcp_server.crawl(GOAL, "https://down.example/")
     assert data["error"] == "fetch_failed"

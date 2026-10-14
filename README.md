@@ -191,6 +191,7 @@ jevcrawl doctor
 | `JEVCRAWL_BASE_URL` | Jev-compatible endpoint | `https://api.typesafe.ai` |
 | `JEVCRAWL_MODEL` | model id | `jev-1.13.0` (pinned: thresholds are calibrated per version) |
 | `JEVCRAWL_CACHE_DIR` | answer cache | `~/.jevcrawl/cache` |
+| `JEVCRAWL_RESPECT_ROBOTS` | skip URLs the site's `robots.txt` disallows (`0` turns it off) | `1` |
 
 Everything else (thresholds, links per page, concurrency) has a measured default in
 [`jevcrawl/config.py`](jevcrawl/config.py), and Python callers can pass their own `Config`.
@@ -207,8 +208,8 @@ read from the environment and never written to disk or logs.
 
 ## Crawling responsibly
 
-jevcrawl does not read `robots.txt` and does not rate-limit itself beyond fetching four pages at
-a time. You are responsible for the sites you crawl, their terms of service and the law that
+jevcrawl follows each site's `robots.txt` by default (set `JEVCRAWL_RESPECT_ROBOTS=0` to turn
+that off) and does not rate-limit itself beyond fetching four pages at a time. You are responsible for the sites you crawl, their terms of service and the law that
 applies to you. It never logs in, does not try to get past paywalls or CAPTCHAs, and does not
 run JavaScript (pages that need it are listed in `stats.needs_js_urls`). Every call is bounded by
 `max_pages`, `max_seconds`, `max_decision_usd` and `return_tokens`.

@@ -20,6 +20,7 @@ from jevcrawl.decide.cache import DecisionCache
 from jevcrawl.decide.client import DecisionClient, JevAuthError
 from jevcrawl.decide.decider import BudgetExceeded, Decider, PageDecision
 from jevcrawl.fetch.http import Fetcher, FetchResult
+from jevcrawl.fetch.robots import Robots
 from jevcrawl.log import get_logger
 from jevcrawl.models import Block, CrawlResult, Link, Page, Stats, estimate_tokens
 from jevcrawl.segment.blocks import segment_html
@@ -36,6 +37,7 @@ class Session:
         config.cache_dir.mkdir(parents=True, exist_ok=True)
         self.config = config
         self.fetcher = Fetcher()
+        self.robots = Robots(self.fetcher) if config.respect_robots else None
         self.boilerplate = BoilerplateStore()
         self._client: DecisionClient | None = None
         self._decisions: DecisionCache | None = None
@@ -115,6 +117,12 @@ async def fetch_start(fetcher: Fetcher, url: str) -> FetchResult:
 
 def fetch_failure(url: str, result: FetchResult) -> CrawlError:
     """Map a failed fetch of the start URL to an agent-facing error."""
+    if result.error == "robots":
+        return CrawlError(
+            "blocked_by_robots",
+            f"{url} is disallowed by the site's robots.txt. "
+            "Set JEVCRAWL_RESPECT_ROBOTS=0 only if you are allowed to crawl it anyway.",
+        )
     if result.error == "non_html":
         return CrawlError("not_html", f"{url} is not an HTML page ({result.content_type}).")
     return CrawlError("fetch_failed", f"Could not fetch {url}: {result.error}.")
@@ -262,6 +270,9 @@ class _Crawl:
                 await self.seed_from_sitemap()
 
     async def fetch(self, item: FrontierItem) -> FetchResult:
+        robots = self.session.robots
+        if robots and not await robots.allowed(item.url):
+            return FetchResult(item.url, item.url, error="robots")
         if item.depth == 0:
             return await fetch_start(self.session.fetcher, item.url)
         return await self.session.fetcher.fetch(item.url)
