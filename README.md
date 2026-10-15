@@ -79,6 +79,18 @@ operator, starting from docs.python.org"*. Check the setup with
 `uvx jevcrawl doctor`. Agents that load skills
 can also use [`skills/jevcrawl/SKILL.md`](skills/jevcrawl/SKILL.md).
 
+**Pages that need JavaScript** (optional). jevcrawl reads plain HTML. To also render pages that
+are empty without JavaScript, add the `js` extra and download Chromium once:
+
+```bash
+claude mcp add jevcrawl -e TYPESAFE_API_KEY=<your key> -- uvx --from "jevcrawl[js]" jevcrawl
+uvx --from "jevcrawl[js]" playwright install chromium
+```
+
+(In `mcpServers`, use `"args": ["--from", "jevcrawl[js]", "jevcrawl"]`.) Only pages detected as
+JavaScript shells are opened in the browser, at most five per call, and they are listed in
+`stats.js_rendered_urls`. Everything else is still fetched as plain HTML.
+
 ## Benchmarks
 
 Every system starts on a site's home page with the same 30-page budget and the same question.
@@ -111,7 +123,7 @@ without an LLM, so we compared the two on whether they fetch the page that holds
 | **Crawl4AI run** | 20 different tasks, 2026-10-13, Crawl4AI 0.9.4. Crawl only, no LLM: did the crawler fetch the gold page? In the accuracy run, whether a system fetched the gold page closely tracked whether it answered correctly. |
 | **Baselines** | *Claude picks every link*: Claude reads each page and chooses the next link. *Breadth-first*: every page to depth 2. All systems share jevcrawl's fetcher and remove navigation and footers. |
 | **Costs** | Jev cost is billed and exact. LLM costs are token counts at list price. |
-| **Caveats** | 50 and 20 tasks are small samples: the cost gap is large and stable, the accuracy gap less so. Crawl4AI drives a real browser, jevcrawl does not run JavaScript. |
+| **Caveats** | 50 and 20 tasks are small samples: the cost gap is large and stable, the accuracy gap less so. Crawl4AI drives a real browser; the benchmark ran jevcrawl without JavaScript rendering. |
 
 The benchmark code and how to reproduce every number: [`bench/`](bench/README.md).
 
@@ -192,6 +204,7 @@ jevcrawl doctor
 | `JEVCRAWL_MODEL` | model id | `jev-1.13.0` (pinned: thresholds are calibrated per version) |
 | `JEVCRAWL_CACHE_DIR` | answer cache | `~/.jevcrawl/cache` |
 | `JEVCRAWL_RESPECT_ROBOTS` | skip URLs the site's `robots.txt` disallows (`0` turns it off) | `1` |
+| `JEVCRAWL_RENDER_JS` | render JavaScript-only pages when the `js` extra is installed (`0` turns it off) | `1` |
 
 Everything else (thresholds, links per page, concurrency) has a measured default in
 [`jevcrawl/config.py`](jevcrawl/config.py), and Python callers can pass their own `Config`.
@@ -209,10 +222,11 @@ read from the environment and never written to disk or logs.
 ## Crawling responsibly
 
 jevcrawl follows each site's `robots.txt` by default (set `JEVCRAWL_RESPECT_ROBOTS=0` to turn
-that off) and does not rate-limit itself beyond fetching four pages at a time. You are responsible for the sites you crawl, their terms of service and the law that
-applies to you. It never logs in, does not try to get past paywalls or CAPTCHAs, and does not
-run JavaScript (pages that need it are listed in `stats.needs_js_urls`). Every call is bounded by
-`max_pages`, `max_seconds`, `max_decision_usd` and `return_tokens`.
+that off) and does not rate-limit itself beyond fetching four pages at a time. You are
+responsible for the sites you crawl, their terms of service and the law that applies to you. It
+never logs in and does not try to get past paywalls or CAPTCHAs. Without the `js` extra it does
+not run JavaScript (pages that need it are listed in `stats.needs_js_urls`). Every call is
+bounded by `max_pages`, `max_seconds`, `max_decision_usd` and `return_tokens`.
 
 ## Contributing
 

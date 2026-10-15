@@ -111,6 +111,8 @@ def format_result(command: str, data: dict[str, Any]) -> str:
     lines.append(summary)
     if s["needs_js_urls"]:
         lines.append(f"needs JavaScript (not rendered): {', '.join(s['needs_js_urls'])}")
+    if s.get("js_rendered_urls"):
+        lines.append(f"rendered with JavaScript: {', '.join(s['js_rendered_urls'])}")
     return "\n".join(lines)
 
 

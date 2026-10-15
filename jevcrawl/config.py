@@ -1,4 +1,4 @@
-"""Settings. Five environment variables; everything else is a sensible default."""
+"""Settings. Six environment variables; everything else is a sensible default."""
 
 from __future__ import annotations
 
@@ -40,6 +40,8 @@ class Config:
     max_kept_per_page: int = 10
     fetch_concurrency: int = 4  # pages fetched at the same time
     respect_robots: bool = True  # skip URLs the site's robots.txt disallows
+    render_js: bool = True  # render JavaScript-only pages in a browser (needs the js extra)
+    max_js_renders: int = 5  # browser renders per call; each takes a few seconds
     use_sitemap: bool = True  # offer sitemap URLs that share words with the goal as links
     sitemap_links: int = 60
     keep_layout_tags: bool = False  # treat nav/aside/footer text as content
@@ -48,7 +50,8 @@ class Config:
 
 def load_config(env: Mapping[str, str] | None = None) -> Config:
     """Settings from ``TYPESAFE_API_KEY``, ``JEVCRAWL_BASE_URL``, ``JEVCRAWL_MODEL``,
-    ``JEVCRAWL_CACHE_DIR`` and ``JEVCRAWL_RESPECT_ROBOTS``; everything else keeps its default."""
+    ``JEVCRAWL_CACHE_DIR``, ``JEVCRAWL_RESPECT_ROBOTS`` and ``JEVCRAWL_RENDER_JS``; everything
+    else keeps its default."""
     env = os.environ if env is None else env
 
     def get(name: str) -> str | None:
@@ -56,15 +59,16 @@ def load_config(env: Mapping[str, str] | None = None) -> Config:
 
     defaults = Config()
     cache_dir = get("JEVCRAWL_CACHE_DIR")
-    robots = get("JEVCRAWL_RESPECT_ROBOTS")
+
+    def switch(name: str, default: bool) -> bool:
+        value = get(name)
+        return default if value is None else value.lower() not in {"0", "false", "no", "off"}
+
     return Config(
         api_key=get("TYPESAFE_API_KEY"),
         base_url=(get("JEVCRAWL_BASE_URL") or defaults.base_url).rstrip("/"),
         model=get("JEVCRAWL_MODEL") or defaults.model,
         cache_dir=Path(cache_dir).expanduser() if cache_dir else defaults.cache_dir,
-        respect_robots=(
-            defaults.respect_robots
-            if robots is None
-            else robots.lower() not in {"0", "false", "no", "off"}
-        ),
+        respect_robots=switch("JEVCRAWL_RESPECT_ROBOTS", defaults.respect_robots),
+        render_js=switch("JEVCRAWL_RENDER_JS", defaults.render_js),
     )

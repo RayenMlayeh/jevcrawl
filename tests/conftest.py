@@ -8,7 +8,14 @@ from jevcrawl.config import Config
 # The isolation fixture below hides the key from tests; the live test needs the real one.
 REAL_TYPESAFE_KEY = os.environ.get("TYPESAFE_API_KEY")
 
-ENV_VARS = ("TYPESAFE_API_KEY", "JEVCRAWL_BASE_URL", "JEVCRAWL_MODEL", "JEVCRAWL_CACHE_DIR")
+ENV_VARS = (
+    "TYPESAFE_API_KEY",
+    "JEVCRAWL_BASE_URL",
+    "JEVCRAWL_MODEL",
+    "JEVCRAWL_CACHE_DIR",
+    "JEVCRAWL_RESPECT_ROBOTS",
+    "JEVCRAWL_RENDER_JS",
+)
 
 
 @pytest.fixture(autouse=True)
@@ -31,4 +38,5 @@ def config(tmp_path):
         cache_dir=tmp_path / "cache",
         fetch_concurrency=1,
         use_sitemap=False,
+        render_js=False,
     )

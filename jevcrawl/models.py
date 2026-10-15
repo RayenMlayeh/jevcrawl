@@ -106,7 +106,8 @@ class Stats:
     model: str | None = None
     degraded: bool = False
     degraded_reason: str | None = None
-    needs_js_urls: list[str] = field(default_factory=list)
+    needs_js_urls: list[str] = field(default_factory=list)  # need JavaScript, not rendered
+    js_rendered_urls: list[str] = field(default_factory=list)  # rendered in a browser
     stopped_because: str | None = None
     elapsed_seconds: float = 0.0
 

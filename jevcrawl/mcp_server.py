@@ -95,7 +95,7 @@ async def crawl(
         `stats.stopped_because` ("answered", "frontier_empty", "max_pages", "max_seconds",
         "budget") and `stats.degraded` (true means the decision model was unreachable and
         results are unscored). `stats.needs_js_urls` lists pages that only render with
-        JavaScript, which jevcrawl does not run.
+        JavaScript and could not be rendered; `stats.js_rendered_urls` those it rendered.
         On failure: `{"error": code, "message": ...}`.
 
     Quote returned text together with its `url`.

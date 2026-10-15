@@ -30,6 +30,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Renders JavaScript-only pages in headless Chromium (then run `playwright install chromium`).
+js = ["playwright>=1.40"]
 bench = ["datasets", "anthropic"]
 # Only for the Crawl4AI baseline in bench/; it downloads a browser (run `crawl4ai-setup`).
 crawl4ai = ["crawl4ai"]

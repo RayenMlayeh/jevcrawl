@@ -6,12 +6,15 @@ from types import SimpleNamespace
 
 import pytest
 
-from jevcrawl.config import Thresholds
+import jevcrawl.crawl.loop as loop_module
+from jevcrawl.config import Config, Thresholds
 from jevcrawl.crawl import CrawlError, crawl, map_site, scrape
 from jevcrawl.crawl.frontier import Frontier, link_priority
-from jevcrawl.crawl.loop import classify
+from jevcrawl.crawl.loop import classify, make_renderer
 from jevcrawl.crawl.pack import by_relevance, cut_to_tokens, pack_result, top_k_excerpts
 from jevcrawl.crawl.stop import Budget
+from jevcrawl.fetch.browser import Browser
+from jevcrawl.fetch.http import FetchResult
 from jevcrawl.models import Block, Stats
 from jevcrawl.segment.blocks import segment_html
 from tests.fixtures.fake_site import BASE, mount_site, read
@@ -208,6 +211,73 @@ async def test_scrape_with_goal_asks_block_questions_only(world, config):
 async def test_scrape_reports_js_shells(world, config):
     result = await scrape(BASE + "/app", replace(config, api_key=None))
     assert result.stats.needs_js_urls == [BASE + "/app"] and result.blocks == []
+
+
+RENDERED_APP = (
+    "<html><body><main><h1>Returns</h1>"
+    f"<p>{REFUND}</p>"
+    + "<p>Bring the item back in its original packaging.</p>" * 12
+    + "</main></body></html>"
+)
+
+
+class FakeBrowser:
+    """Stands in for Playwright: returns fixed HTML, or a failure."""
+
+    def __init__(self, html: str | None = RENDERED_APP) -> None:
+        self.html = html
+        self.urls: list[str] = []
+        self.closed = False
+
+    async def render(self, url):
+        self.urls.append(url)
+        if self.html is None:
+            return FetchResult(url, url, error="render_failed")
+        return FetchResult(url, url, 200, self.html, "text/html")
+
+    async def aclose(self):
+        self.closed = True
+
+
+def use_browser(monkeypatch, browser):
+    monkeypatch.setattr(loop_module, "make_renderer", lambda config: browser)
+
+
+async def test_js_shell_is_rendered_when_a_browser_is_available(world, config, monkeypatch):
+    browser = FakeBrowser()
+    use_browser(monkeypatch, browser)
+    result = await scrape(BASE + "/app", replace(config, api_key=None))
+    assert browser.urls == [BASE + "/app"] and browser.closed
+    assert result.stats.js_rendered_urls == [BASE + "/app"] and result.stats.needs_js_urls == []
+    assert any(REFUND in b.text for b in result.blocks)
+
+
+async def test_only_js_shells_are_rendered_during_a_crawl(world, config, monkeypatch):
+    browser = FakeBrowser()
+    use_browser(monkeypatch, browser)
+    result = await crawl("shipping jobs refund", BASE + "/", config, max_pages=10)
+    assert browser.urls == [BASE + "/app"]
+    assert result.stats.js_rendered_urls == [BASE + "/app"]
+
+
+async def test_failed_or_capped_renders_are_reported(world, config, monkeypatch):
+    browser = FakeBrowser(html=None)
+    use_browser(monkeypatch, browser)
+    result = await scrape(BASE + "/app", replace(config, api_key=None))
+    assert browser.urls == [BASE + "/app"] and result.stats.needs_js_urls == [BASE + "/app"]
+
+    browser = FakeBrowser()
+    use_browser(monkeypatch, browser)
+    capped = await scrape(BASE + "/app", replace(config, api_key=None, max_js_renders=0))
+    assert browser.urls == [] and capped.stats.needs_js_urls == [BASE + "/app"]
+
+
+def test_a_browser_needs_the_flag_and_the_js_extra(monkeypatch):
+    monkeypatch.setattr(loop_module, "playwright_installed", lambda: False)
+    assert make_renderer(Config()) is None
+    monkeypatch.setattr(loop_module, "playwright_installed", lambda: True)
+    assert isinstance(make_renderer(Config()), Browser)
+    assert make_renderer(Config(render_js=False)) is None
 
 
 async def test_map_ranks_returns_first_with_link_questions_only(world, config):

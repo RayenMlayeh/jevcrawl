@@ -12,6 +12,7 @@ from jevcrawl.crawl.loop import (
     open_session,
     page_record,
     parse_page,
+    render_js,
     validate_url,
 )
 from jevcrawl.crawl.pack import pack_result
@@ -47,10 +48,9 @@ async def scrape(
         page = parse_page(fetched, config)
         if page is None:
             raise fetch_failure(start, fetched)
+        page = await render_js(session, page, stats)
         stats.pages_fetched = 1
         stats.tokens_raw = estimate_tokens(page.text)
-        if page.needs_js:
-            stats.needs_js_urls.append(page.final_url)
         blocks = free_filter_blocks(page, session.boilerplate)
 
         if goal is None:  # all blocks that passed the free filters, in page order, no Jev call

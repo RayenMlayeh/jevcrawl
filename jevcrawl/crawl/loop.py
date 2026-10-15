@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -19,7 +20,9 @@ from jevcrawl.crawl.stop import Budget
 from jevcrawl.decide.cache import DecisionCache
 from jevcrawl.decide.client import DecisionClient, JevAuthError
 from jevcrawl.decide.decider import BudgetExceeded, Decider, PageDecision
+from jevcrawl.fetch.browser import Browser, Renderer, playwright_installed
 from jevcrawl.fetch.http import Fetcher, FetchResult
+from jevcrawl.fetch.jsdetect import MIN_VISIBLE_CHARS
 from jevcrawl.fetch.robots import Robots
 from jevcrawl.log import get_logger
 from jevcrawl.models import Block, CrawlResult, Link, Page, Stats, estimate_tokens
@@ -38,6 +41,8 @@ class Session:
         self.config = config
         self.fetcher = Fetcher()
         self.robots = Robots(self.fetcher) if config.respect_robots else None
+        self.renderer = make_renderer(config)
+        self.renders_left = config.max_js_renders
         self.boilerplate = BoilerplateStore()
         self._client: DecisionClient | None = None
         self._decisions: DecisionCache | None = None
@@ -57,10 +62,19 @@ class Session:
     async def aclose(self) -> None:
         """Close every resource."""
         await self.fetcher.aclose()
+        if self.renderer:
+            await self.renderer.aclose()
         if self._client:
             await self._client.aclose()
         if self._decisions:
             self._decisions.close()
+
+
+def make_renderer(config: Config) -> Renderer | None:
+    """A browser for JavaScript-only pages, if enabled and the ``js`` extra is installed."""
+    if not config.render_js or not playwright_installed():
+        return None
+    return Browser()
 
 
 @asynccontextmanager
@@ -189,6 +203,22 @@ def parse_page(result: FetchResult, config: Config) -> Page | None:
         return None
 
 
+async def render_js(session: Session, page: Page, stats: Stats) -> Page:
+    """Render a page that needs JavaScript in the browser; report it if that is not possible."""
+    if page.needs_js and session.renderer and session.renders_left > 0:
+        session.renders_left -= 1
+        rendered = await session.renderer.render(page.final_url)
+        again = parse_page(rendered, session.config) if rendered.ok else None
+        # Judged by text alone: a rendered app keeps its "enable JavaScript" <noscript> notice.
+        if again is not None and len(again.text) >= max(MIN_VISIBLE_CHARS, len(page.text) + 1):
+            again = dataclasses.replace(again, needs_js=False)
+            stats.js_rendered_urls.append(page.final_url)
+            return again
+    if page.needs_js:
+        stats.needs_js_urls.append(page.final_url)
+    return page
+
+
 class _Stop(Exception):
     """Ends the crawl with ``reason`` (one of ``STOP_REASONS``)."""
 
@@ -298,14 +328,14 @@ class _Crawl:
         if page is None:
             return
         self.seen.add(canonical_url(page.final_url))
+        page = await render_js(self.session, page, self.stats)
+        self.seen.add(canonical_url(page.final_url))
         if item.depth == 0:
             self.scope = Scope(page.final_url, self.config.same_domain)  # redirects move hosts
         stats = self.stats
         stats.pages_fetched += 1
         stats.tokens_raw += estimate_tokens(page.text)
         self.out.pages.append(page_record(page))
-        if page.needs_js:
-            stats.needs_js_urls.append(page.final_url)
 
         blocks = free_filter_blocks(page, self.session.boilerplate) if self.use_blocks else []
         surviving = {b.id for b in blocks}

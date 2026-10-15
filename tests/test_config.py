@@ -39,3 +39,8 @@ def test_respect_robots_is_on_unless_switched_off():
     for off in ("0", "false", "No", "OFF"):
         assert load_config(env={"JEVCRAWL_RESPECT_ROBOTS": off}).respect_robots is False
     assert load_config(env={"JEVCRAWL_RESPECT_ROBOTS": "1"}).respect_robots is True
+
+
+def test_render_js_is_on_unless_switched_off():
+    assert load_config(env={}).render_js is True
+    assert load_config(env={"JEVCRAWL_RENDER_JS": "0"}).render_js is False

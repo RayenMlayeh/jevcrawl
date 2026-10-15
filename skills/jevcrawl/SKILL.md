@@ -35,16 +35,18 @@ page, with its URL and character offsets.
    - `auth_error`: the API key is missing or invalid (you get `{"error": "auth_error"}`).
 5. **Check `stats.degraded`.** If true, the decision model was unreachable and the blocks are
    unscored (`relevance: null`, all in `uncertain`); treat them as raw text, not as ranked.
-6. **`stats.needs_js_urls`** lists pages that only render with JavaScript. jevcrawl does not
-   run a browser, so their content is missing; tell the user instead of guessing.
+6. **`stats.needs_js_urls`** lists pages that only render with JavaScript and could not be
+   rendered (the optional `js` extra is not installed, or the render failed), so their content
+   is missing; tell the user instead of guessing. `stats.js_rendered_urls` lists pages that
+   were rendered in a browser.
 7. **Quote returned text together with its `url`.** `char_start`/`char_end` index into the
    page text; its sha256 is in `pages[].text_sha256`, so a quote can be verified later.
 
 ## Errors
 
 Failures come back as `{"error": "<code>", "message": "<what to do>"}`: `auth_error`,
-`invalid_url`, `not_html`, `fetch_failed`, `invalid_argument`, `internal_error`.
-jevcrawl never logs in or bypasses paywalls or CAPTCHAs and does not run JavaScript.
+`invalid_url`, `not_html`, `fetch_failed`, `blocked_by_robots`, `invalid_argument`,
+`internal_error`. jevcrawl never logs in or bypasses paywalls or CAPTCHAs.
 
 ## Notes
 
