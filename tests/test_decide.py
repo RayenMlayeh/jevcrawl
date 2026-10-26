@@ -217,8 +217,13 @@ async def test_cache_key_depends_on_model_state_and_question(tmp_path):
     assert k != decision_key("m", {"a": 1}, {"q": 2})
     assert canonical_json({"b": 1, "a": [1, 2]}) == '{"a":[1,2],"b":1}'
     cache = DecisionCache(tmp_path / "c.sqlite")
-    cache.put(k, "jev-1.13.0", 0.25)
+    cache.put("jev-1.13.0", {k: 0.25, "old": 0.5})
     assert cache.get(k) == 0.25 and cache.get("missing") is None
+    cache._db.execute("UPDATE decisions SET created_at = 0 WHERE key = 'old'")
+    cache._db.commit()
+    cache.close()
+    cache = DecisionCache(tmp_path / "c.sqlite")  # opening drops answers older than 30 days
+    assert cache.get("old") is None and cache.get(k) == 0.25
 
 
 async def test_only_uncached_questions_are_sent(cfg, fake, client, tmp_path):

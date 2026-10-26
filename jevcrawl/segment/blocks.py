@@ -72,6 +72,7 @@ IGNORED_TAGS: Final = frozenset(
 MIN_BLOCK_TOKENS: Final = 20
 MAX_LINK_DENSITY: Final = 0.5  # blocks above this are dropped by the free filters
 CONTEXT_CHARS: Final = 200
+MAX_TITLE_CHARS: Final = 300  # the title rides in every Jev request of the page
 # Sentence enders: ASCII, CJK and fullwidth variants, and the Arabic question mark.
 _SENTENCE_END = re.compile("(?<=[.!?\\u3002\\uff01\\uff1f\\u061f])\\s+")
 _DISPLAY_NONE = re.compile(r"display\s*:\s*none|visibility\s*:\s*hidden", re.IGNORECASE)
@@ -404,7 +405,7 @@ def _group_sections(units: list[_Unit]) -> list[list[tuple[int, _Unit]]]:
 
 def _page_title(tree: LexborHTMLParser) -> str:
     node = tree.css_first("title") or tree.css_first("h1")
-    return _normalize(node.text(separator=" ")) if node else ""
+    return _normalize(node.text(separator=" "))[:MAX_TITLE_CHARS] if node else ""
 
 
 def segment_html(

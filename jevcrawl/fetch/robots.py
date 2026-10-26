@@ -18,14 +18,21 @@ class Robots:
 
     def __init__(self, fetcher: Fetcher) -> None:
         self._fetcher = fetcher
+        self._bodies: dict[str, bytes | None] = {}
         self._parsers: dict[str, RobotFileParser | None] = {}
+
+    async def body(self, origin: str) -> bytes | None:
+        """The raw robots.txt of ``origin`` (``scheme://host``), fetched once; None if missing."""
+        if origin not in self._bodies:
+            self._bodies[origin] = await self._fetcher.fetch_raw(origin + "/robots.txt")
+        return self._bodies[origin]
 
     async def allowed(self, url: str) -> bool:
         """True if ``url`` may be fetched."""
         parts = urlsplit(url)
         origin = f"{parts.scheme}://{parts.netloc}"
         if origin not in self._parsers:
-            body = await self._fetcher.fetch_raw(origin + "/robots.txt")
+            body = await self.body(origin)
             parser: RobotFileParser | None = None
             if body:
                 parser = RobotFileParser()

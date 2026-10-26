@@ -5,15 +5,6 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 
-STOP_REASONS = (
-    "answered",
-    "frontier_empty",
-    "max_pages",
-    "max_seconds",
-    "budget",
-    "auth_error",
-)
-
 
 @dataclass(frozen=True)
 class Budget:

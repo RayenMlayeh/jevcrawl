@@ -20,7 +20,7 @@ from jevcrawl.decide.client import (
     JevRequestError,
 )
 from jevcrawl.decide.cost import CostTracker
-from jevcrawl.decide.packing import estimate_request_tokens, pack_questions
+from jevcrawl.decide.packing import PackingError, estimate_request_tokens, pack_questions
 from jevcrawl.log import get_logger
 from jevcrawl.models import Block, Link, Page, Stats
 
@@ -115,7 +115,11 @@ class Decider:
         answers, pending, keys = self._from_cache(state, questions)
         if not pending:
             return answers
-        bodies = pack_questions(self.model, state, pending)
+        try:
+            bodies = pack_questions(self.model, state, pending)
+        except PackingError as exc:  # e.g. a giant goal: leave this page unscored, keep crawling
+            log.warning("questions not sent: %s", exc)
+            return answers
         estimates = [estimate_request_tokens(b) for b in bodies]
         if self.cost.would_exceed(sum(estimates)):
             raise BudgetExceeded(
@@ -196,11 +200,10 @@ class Decider:
         keys: dict[str, str],
         answers: dict[str, float],
     ) -> None:
-        for qid in asked:
-            if qid in result.nouls:
-                answers[qid] = result.nouls[qid]
-                if self._cache:
-                    self._cache.put(keys[qid], result.model, result.nouls[qid])
+        got = {qid: result.nouls[qid] for qid in asked if qid in result.nouls}
+        answers.update(got)
+        if self._cache:
+            self._cache.put(result.model, {keys[qid]: noul for qid, noul in got.items()})
 
     def _succeed(self, result: Evaluation) -> None:
         self._failures = 0

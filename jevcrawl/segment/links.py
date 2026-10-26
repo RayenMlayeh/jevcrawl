@@ -114,8 +114,8 @@ class Scope:
 
     @property
     def host(self) -> str:
-        """Lowercase hostname of the start URL."""
-        return (urlsplit(self.start_url).hostname or "").lower()
+        """Lowercase hostname of the start URL without ``www.``, so sibling subdomains count."""
+        return (urlsplit(self.start_url).hostname or "").lower().removeprefix("www.")
 
     def contains(self, url: str) -> bool:
         """True if ``url`` is inside the crawl scope."""

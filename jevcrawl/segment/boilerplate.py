@@ -43,10 +43,6 @@ class BoilerplateStore:
                 found.add(h)
         return found
 
-    def pages_seen(self, domain: str, block_hash_: str) -> int:
-        """Number of distinct pages of ``domain`` on which the hash has been seen."""
-        return len(self._pages.get((domain, block_hash_), ()))
-
 
 def link_density(block: Block) -> float:
     """Share of the block's characters that sit inside ``<a>`` elements."""
