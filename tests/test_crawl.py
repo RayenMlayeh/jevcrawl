@@ -1,6 +1,7 @@
 """Phase 3: frontier, loop, packing, scrape, map (tests 5, 6, 8, 10, 11 at crawl level)."""
 
 import asyncio
+import sys
 from dataclasses import replace
 from types import SimpleNamespace
 
@@ -552,3 +553,65 @@ def test_goal_words_split_chinese_into_bigrams():
     hit = Link("", "https://x/info/1333/2209.htm", "计算机学院教师在国际会议发表论文", "", 0)
     miss = Link("", "https://x/a", "学校首页", "", 0)
     assert goal_overlap(words, hit) > 3 and goal_overlap(words, miss) == 0
+
+
+# ------------------------------------------------------- redirects, limits, scope
+
+
+async def test_redirects_off_site_or_to_a_page_already_read_are_skipped(world, config):
+    import httpx
+
+    routes, _ = world
+    html = {"content-type": "text/html"}
+    routes["other"].mock(
+        return_value=httpx.Response(200, text="<p>partners careers page</p>", headers=html)
+    )
+    moved = {
+        "/jobs": "https://other.example.org/careers",
+        "/help/shipping": BASE + "/",
+        "/app": BASE + "/private/area",  # disallowed by robots.txt
+    }
+    for path, target in moved.items():
+        routes[path].mock(return_value=httpx.Response(302, headers={"location": target}))
+    result = await crawl("quantum chromodynamics", BASE + "/", config, max_pages=50)
+    fetched = [p["url"] for p in result.pages]
+    assert fetched.count(BASE + "/") == 1
+    assert not any("other.example.org" in u or "/private/" in u for u in fetched)
+    assert not any("partners" in b.text for b in result.blocks + result.uncertain)
+
+
+async def test_a_hanging_server_cannot_overrun_the_time_limit(world, config, monkeypatch):
+    routes, _ = world
+
+    async def hang(request):
+        await asyncio.Event().wait()
+
+    routes["/help/returns"].mock(side_effect=hang)
+    result = await crawl(GOAL, BASE + "/", config, max_seconds=1)
+    assert result.stats.stopped_because == "max_seconds"
+    monkeypatch.setattr(sys.modules["jevcrawl.crawl.scrape"], "SCRAPE_SECONDS", 0.5)
+    with pytest.raises(CrawlError) as info:
+        await scrape(BASE + "/help/returns", config)
+    assert info.value.code == "fetch_failed"
+
+
+async def test_a_goal_too_large_for_jev_leaves_pages_unscored_instead_of_failing(world, config):
+    result = await crawl("refund " * 40_000, BASE + "/", config, max_pages=2)
+    assert result.stats.pages_fetched == 2 and result.stats.jev_calls == 0
+
+
+def test_scope_from_a_www_host_includes_sibling_subdomains():
+    from jevcrawl.segment.links import Scope
+
+    scope = Scope("https://www.python.org/")
+    assert scope.contains("https://docs.python.org/3/") and scope.contains("https://python.org/")
+    assert not scope.contains("https://notpython.org/")
+
+
+def test_gzip_sitemaps_unpack_only_up_to_the_cap():
+    import gzip
+
+    from jevcrawl.crawl.sitemap import MAX_UNZIPPED_BYTES, _decode
+
+    bomb = gzip.compress(b"0" * (MAX_UNZIPPED_BYTES + 1000))
+    assert len(_decode(bomb)) == MAX_UNZIPPED_BYTES

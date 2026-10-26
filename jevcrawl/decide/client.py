@@ -10,7 +10,7 @@ import asyncio
 import json
 import random
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
@@ -70,7 +70,6 @@ class Evaluation:
     nouls: dict[str, float]
     input_tokens: int
     output_tokens: int = 0
-    raw: dict[str, Any] = field(default_factory=dict, repr=False)
 
 
 def _retry_after(response: httpx.Response) -> float | None:
@@ -203,7 +202,6 @@ class DecisionClient:
                 nouls,
                 int(usage.get("input_tokens") or 0),
                 int(usage.get("output_tokens") or 0),
-                data,
             )
         except (KeyError, TypeError, ValueError, AttributeError) as exc:
             raise JevResponseError(f"unexpected response shape: {exc!r}") from exc

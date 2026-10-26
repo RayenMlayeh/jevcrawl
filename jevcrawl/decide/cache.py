@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+MAX_AGE_SECONDS = 30 * 24 * 3600  # keys include the goal, so old answers are rarely reused
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS decisions (
     key TEXT PRIMARY KEY,
@@ -37,6 +38,9 @@ class DecisionCache:
         path.parent.mkdir(parents=True, exist_ok=True)
         self._db = sqlite3.connect(path)
         self._db.execute(_SCHEMA)
+        self._db.execute(
+            "DELETE FROM decisions WHERE created_at < ?", (time.time() - MAX_AGE_SECONDS,)
+        )
         self._db.commit()
 
     def get(self, key: str) -> float | None:
@@ -44,11 +48,12 @@ class DecisionCache:
         row = self._db.execute("SELECT answer FROM decisions WHERE key = ?", (key,)).fetchone()
         return float(json.loads(row[0])["noul"]) if row else None
 
-    def put(self, key: str, model: str, noul: float) -> None:
-        """Store an answer; ``model`` is the versioned id that produced it."""
-        self._db.execute(
+    def put(self, model: str, answers: dict[str, float]) -> None:
+        """Store ``{key: noul}`` in one transaction; ``model`` is the versioned id behind them."""
+        now = time.time()
+        self._db.executemany(
             "INSERT OR REPLACE INTO decisions VALUES (?, ?, ?, ?)",
-            (key, model, json.dumps({"noul": noul}), time.time()),
+            [(key, model, json.dumps({"noul": noul}), now) for key, noul in answers.items()],
         )
         self._db.commit()
 

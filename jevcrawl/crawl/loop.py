@@ -5,8 +5,8 @@ from __future__ import annotations
 import asyncio
 import dataclasses
 import time
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlsplit
@@ -28,7 +28,7 @@ from jevcrawl.log import get_logger
 from jevcrawl.models import Block, CrawlResult, Link, Page, Stats, estimate_tokens
 from jevcrawl.segment.blocks import segment_html
 from jevcrawl.segment.boilerplate import BoilerplateStore, free_filter_blocks
-from jevcrawl.segment.links import Scope, canonical_url, cap_links, prefilter_links
+from jevcrawl.segment.links import Scope, canonical_url, free_filter_links
 
 log = get_logger("crawl")
 
@@ -40,7 +40,7 @@ class Session:
         config.cache_dir.mkdir(parents=True, exist_ok=True)
         self.config = config
         self.fetcher = Fetcher()
-        self.robots = Robots(self.fetcher) if config.respect_robots else None
+        self.robots = Robots(self.fetcher)  # also read for sitemaps when robots are not respected
         self.renderer = make_renderer(config)
         self.renders_left = config.max_js_renders
         self.boilerplate = BoilerplateStore()
@@ -152,19 +152,6 @@ def page_record(page: Page) -> dict[str, Any]:
     }
 
 
-def candidate_links(
-    page: Page,
-    scope: Scope,
-    seen: set[str],
-    surviving: set[str],
-    queued: set[str],
-    limit: int,
-    goal: str | None = None,
-) -> list[Link]:
-    """Free link filters (scope, traps, binaries, already seen), then the per-page cap."""
-    return cap_links(prefilter_links(page.links, scope, seen, queued), limit, surviving, goal)
-
-
 def classify(
     blocks: list[Block], scores: list[float | None], profile: Thresholds, cap: int
 ) -> tuple[list[Block], list[Block]]:
@@ -220,11 +207,24 @@ async def render_js(session: Session, page: Page, stats: Stats) -> Page:
 
 
 class _Stop(Exception):
-    """Ends the crawl with ``reason`` (one of ``STOP_REASONS``)."""
+    """Ends the crawl with ``reason``: answered, frontier_empty, max_pages, max_seconds, budget
+    or auth_error."""
 
     def __init__(self, reason: str) -> None:
         super().__init__(reason)
         self.reason = reason
+
+
+@contextmanager
+def _stop_on_limits() -> Iterator[None]:
+    """Turn the decider's spend limit and a rejected key into stop reasons."""
+    try:
+        yield
+    except BudgetExceeded as exc:
+        log.info("stopping: %s", exc)
+        raise _Stop("budget") from exc
+    except JevAuthError as exc:
+        raise _Stop("auth_error") from exc
 
 
 class _Crawl:
@@ -266,9 +266,8 @@ class _Crawl:
     async def run(self) -> LoopResult:
         try:
             while True:
-                if reason := self.budget.exhausted(
-                    self.stats.pages_fetched, self.started, time.monotonic()
-                ):
+                now = time.monotonic()
+                if reason := self.budget.exhausted(self.stats.pages_fetched, self.started, now):
                     raise _Stop(reason)
                 if not len(self.frontier):
                     if not self.reserve:
@@ -276,7 +275,11 @@ class _Crawl:
                     log.info("frontier empty; exploring %d below-floor links", len(self.reserve))
                     promote_reserve(self.frontier, self.reserve, self.seen)
                     continue
-                await self.step()
+                try:  # one slow server or Jev retry loop must not overrun max_seconds
+                    async with asyncio.timeout(self.started + self.budget.max_seconds - now):
+                        await self.step()
+                except TimeoutError as exc:
+                    raise _Stop("max_seconds") from exc
         except _Stop as stop:
             self.stats.stopped_because = stop.reason
         self.stats.elapsed_seconds = round(time.monotonic() - self.started, 3)
@@ -300,23 +303,27 @@ class _Crawl:
                 await self.seed_from_sitemap()
 
     async def fetch(self, item: FrontierItem) -> FetchResult:
-        robots = self.session.robots
-        if robots and not await robots.allowed(item.url):
+        if self.config.respect_robots and not await self.session.robots.allowed(item.url):
             return FetchResult(item.url, item.url, error="robots")
         if item.depth == 0:
             return await fetch_start(self.session.fetcher, item.url)
         return await self.session.fetcher.fetch(item.url)
 
     async def ask(self, page: Page, blocks: list[Block], links: list[Link]) -> PageDecision:
-        try:
+        with _stop_on_limits():
             return await self.decider.page(
                 self.goal, page, blocks, links, ask_blocks=self.use_blocks, ask_links=bool(links)
             )
-        except BudgetExceeded as exc:
-            log.info("stopping: %s", exc)
-            raise _Stop("budget") from exc
-        except JevAuthError as exc:
-            raise _Stop("auth_error") from exc
+
+    async def off_limits(self, item: FrontierItem, final_url: str) -> bool:
+        """True when a redirect led off the crawl's hosts or into a robots-disallowed URL."""
+        if item.depth == 0:
+            return False  # the start page may redirect anywhere; the scope follows it
+        if not self.scope.contains(final_url):
+            return True
+        robots = self.session.robots
+        moved = final_url != item.url
+        return moved and self.config.respect_robots and not await robots.allowed(final_url)
 
     async def process(self, item: FrontierItem, fetched: FetchResult) -> None:
         if not fetched.ok:
@@ -324,10 +331,16 @@ class _Crawl:
                 raise fetch_failure(item.url, fetched)
             log.info("skipping %s: %s", item.url, fetched.error)
             return
+        final = canonical_url(fetched.final_url)
+        if final != item.url and final in self.seen:
+            return  # a redirect to a page already read
+        self.seen.add(final)
+        if await self.off_limits(item, final):
+            log.info("skipping %s: redirected to %s", item.url, final)
+            return
         page = parse_page(fetched, self.config)
         if page is None:
             return
-        self.seen.add(canonical_url(page.final_url))
         page = await render_js(self.session, page, self.stats)
         self.seen.add(canonical_url(page.final_url))
         if item.depth == 0:
@@ -341,9 +354,9 @@ class _Crawl:
         surviving = {b.id for b in blocks}
         links: list[Link] = []
         if self.use_links:
-            links = candidate_links(
-                page, self.scope, self.seen, surviving, self.frontier.queued,
-                self.config.links_per_page, self.goal,
+            links = free_filter_links(
+                page.links, self.scope, self.seen, surviving, queued=self.frontier.queued,
+                links_per_page=self.config.links_per_page, goal=self.goal,
             )  # fmt: skip
         decision = await self.ask(page, blocks, links)
         if self.decider.degraded and not self.frontier.is_breadth_first:
@@ -362,12 +375,8 @@ class _Crawl:
         self.offer(links, decision, page_rel, item.depth, page.final_url, profile)
 
         if self.check_answered and new and not self.decider.degraded:
-            try:
+            with _stop_on_limits():
                 answered = await self.decider.answered(self.goal, top_k_excerpts(self.out.kept))
-            except BudgetExceeded as exc:
-                raise _Stop("budget") from exc
-            except JevAuthError as exc:
-                raise _Stop("auth_error") from exc
             if answered is not None and answered >= profile.stop:
                 raise _Stop("answered")
 
@@ -414,7 +423,7 @@ class _Crawl:
         """Offer the sitemap URLs that share words with the goal as depth-1 link candidates."""
         root = self.scope.start_url
         try:
-            urls = await sitemap_urls(self.session.fetcher, root, self.goal)
+            urls = await sitemap_urls(self.session.fetcher, self.session.robots, root, self.goal)
         except Exception as exc:  # a broken sitemap must never break the crawl
             log.info("sitemap skipped: %r", exc)
             return
@@ -426,14 +435,10 @@ class _Crawl:
             url=root, final_url=root, status=200, title="Sitemap", lang="", text="",
             text_sha256="",
         )  # fmt: skip
-        try:
+        with _stop_on_limits():
             decision = await self.decider.page(
                 self.goal, listing, [], links, ask_blocks=False, ask_links=True
             )
-        except BudgetExceeded as exc:
-            raise _Stop("budget") from exc
-        except JevAuthError as exc:
-            raise _Stop("auth_error") from exc
         # Neutral evidence (page_rel 0.5) at depth 0: as if the start page linked to them.
         self.offer(links, decision, 0.5, 0, root, self.config.thresholds)
         log.info("sitemap offered %d links", len(links))

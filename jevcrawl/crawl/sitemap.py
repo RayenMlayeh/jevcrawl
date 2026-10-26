@@ -10,12 +10,13 @@ fetched just because it is in the sitemap.
 
 from __future__ import annotations
 
-import gzip
 import html
 import re
+import zlib
 from urllib.parse import unquote, urljoin, urlsplit
 
-from jevcrawl.fetch.http import Fetcher
+from jevcrawl.fetch.http import MAX_BODY_BYTES, Fetcher
+from jevcrawl.fetch.robots import Robots
 from jevcrawl.log import get_logger
 from jevcrawl.models import Link
 from jevcrawl.segment.links import Scope, canonical_url, goal_overlap, goal_words, is_skippable
@@ -26,6 +27,7 @@ DEFAULT_PATHS = ("/sitemap.xml", "/sitemap_index.xml", "/wp-sitemap.xml")
 SITEMAP_CONTEXT = "Listed in the site's sitemap (no anchor text; words come from the URL)"
 MAX_FILES = 12  # sitemap files read per crawl (an index can list hundreds)
 MAX_URLS = 50_000
+MAX_UNZIPPED_BYTES = 10 * MAX_BODY_BYTES  # a gzip bomb must not unpack to gigabytes
 _LOC = re.compile(rb"<loc>\s*(?:<!\[CDATA\[)?\s*(.*?)\s*(?:\]\]>)?\s*</loc>", re.I | re.S)
 _ROBOTS_SITEMAP = re.compile(r"^\s*sitemap\s*:\s*(\S+)", re.I | re.M)
 _SEPARATORS = re.compile(r"[-_+.]+")
@@ -39,17 +41,17 @@ def _origin(url: str) -> str:
 
 def _decode(body: bytes) -> bytes:
     if body[:2] == b"\x1f\x8b":
-        try:
-            return gzip.decompress(body)
-        except (OSError, EOFError):
+        try:  # wbits 16 + MAX_WBITS reads the gzip header; output stops at the cap
+            return zlib.decompressobj(16 + zlib.MAX_WBITS).decompress(body, MAX_UNZIPPED_BYTES)
+        except zlib.error:
             return b""
     return body
 
 
-async def _sitemap_files(fetcher: Fetcher, root_url: str) -> list[str]:
+async def _sitemap_files(robots: Robots, root_url: str) -> list[str]:
     """Sitemaps named in robots.txt, or the usual locations if it names none."""
     origin = _origin(root_url)
-    body = await fetcher.fetch_raw(origin + "/robots.txt")
+    body = await robots.body(origin)
     if body:
         named = _ROBOTS_SITEMAP.findall(body.decode("utf-8", "replace"))
         if named:
@@ -57,10 +59,10 @@ async def _sitemap_files(fetcher: Fetcher, root_url: str) -> list[str]:
     return [origin + path for path in DEFAULT_PATHS]
 
 
-async def sitemap_urls(fetcher: Fetcher, root_url: str, goal: str) -> list[str]:
+async def sitemap_urls(fetcher: Fetcher, robots: Robots, root_url: str, goal: str) -> list[str]:
     """Page URLs listed in the site's sitemaps (index files are followed, best-matching first)."""
     words = goal_words(goal)
-    queue = await _sitemap_files(fetcher, root_url)
+    queue = await _sitemap_files(robots, root_url)
     done: set[str] = set()
     urls: list[str] = []
     while queue and len(done) < MAX_FILES and len(urls) < MAX_URLS:

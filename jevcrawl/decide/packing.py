@@ -25,10 +25,6 @@ def estimate_request_tokens(body: dict[str, Any]) -> int:
     return estimate_tokens(dumps(body))
 
 
-def _tokens(value: Any) -> int:
-    return estimate_tokens(dumps(value))
-
-
 def pack_questions(
     model: str,
     state: dict[str, Any],
@@ -44,7 +40,7 @@ def pack_questions(
     """
     base = estimate_request_tokens({"model": model, "state": state, "questions": {}})
     if questions:
-        longest = max(_tokens({qid: q}) for qid, q in questions.items())
+        longest = max(estimate_request_tokens({qid: q}) for qid, q in questions.items())
         if base + longest >= MAX_STATE_PLUS_QUESTION_TOKENS:
             raise PackingError(
                 f"state ({base} tokens) plus the longest question ({longest} tokens) "
@@ -54,7 +50,7 @@ def pack_questions(
     current: dict[str, dict[str, Any]] = {}
     used = base
     for qid, question in questions.items():
-        cost = _tokens({qid: question})
+        cost = estimate_request_tokens({qid: question})
         if current and used + cost > max_tokens:
             chunks.append(current)
             current, used = {}, base
