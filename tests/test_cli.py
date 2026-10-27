@@ -85,6 +85,69 @@ def test_custom_endpoint_via_environment(world, respx_mock, capsys, monkeypatch)
     assert json.loads(capsys.readouterr().out)["stats"]["model"] == "decider:0.8b"
 
 
+@pytest.mark.parametrize("before_command", [True, False])
+def test_api_key_name_selects_the_variable(world, capsys, monkeypatch, before_command):
+    monkeypatch.delenv("TYPESAFE_API_KEY")
+    monkeypatch.setenv("MY_JEV_KEY", "custom-key")
+    flag = ["--api-key-name", "MY_JEV_KEY"]
+    crawl = ["crawl", BASE + "/", "--goal", GOAL, "--max-pages", "5", "--json"]
+    assert main(flag + crawl if before_command else crawl + flag) == 0
+    assert world[1].headers[0]["authorization"] == "Bearer custom-key"
+    assert "blocks" in json.loads(capsys.readouterr().out)
+
+
+def test_unset_named_variable_is_an_error_that_names_it(world, capsys):
+    # TYPESAFE_API_KEY is set by the fixture and must not be used instead.
+    assert main(["crawl", BASE + "/", "--goal", GOAL, "--api-key-name", "MY_JEV_KEY"]) == 1
+    err = capsys.readouterr().err
+    assert "MY_JEV_KEY" in err and "TYPESAFE_API_KEY" not in err
+    assert world[1].call_count == 0
+
+
+@pytest.mark.parametrize(
+    ("name", "reason"),
+    [
+        ("sk-abc123secret", "lowercase letters"),  # a key pasted by mistake
+        ("my_jev_key", "lowercase letters"),
+        ("1KEY", "starts with a digit"),
+        ("MY-KEY", "other than A-Z, 0-9 and _"),
+        ("", "it is empty"),
+    ],
+)
+def test_api_key_name_must_be_a_posix_name_and_is_never_echoed(world, capsys, name, reason):
+    for argv in (
+        ["--api-key-name", name, "crawl", BASE + "/", "--goal", GOAL],
+        ["crawl", BASE + "/", "--goal", GOAL, "--api-key-name", name],
+        ["doctor", "--api-key-name", name],
+        ["--api-key-name", name],  # the MCP server must refuse to start too
+    ):
+        with pytest.raises(SystemExit) as exit_info:
+            main(argv)
+        assert exit_info.value.code == 2
+        err = capsys.readouterr().err
+        assert "--api-key-name" in err and reason in err and "uppercase letters" in err
+        assert not name or name not in err
+    assert world[1].call_count == 0
+
+
+def test_doctor_uses_the_named_variable(world, capsys, monkeypatch):
+    monkeypatch.setenv("MY_JEV_KEY", "custom-key")
+    assert main(["doctor", "--api-key-name", "MY_JEV_KEY"]) == 0
+    assert "MY_JEV_KEY" in capsys.readouterr().out
+    assert main(["--api-key-name", "OTHER_KEY", "doctor"]) == 1
+    assert "Set OTHER_KEY" in capsys.readouterr().out
+
+
+def test_server_mode_passes_the_key_name_on(monkeypatch):
+    seen = []
+    monkeypatch.setattr(
+        "jevcrawl.mcp_server.main", lambda api_key_name=None: seen.append(api_key_name)
+    )
+    assert main(["--api-key-name", "MY_JEV_KEY"]) == 0
+    assert main([]) == 0
+    assert seen == ["MY_JEV_KEY", None]
+
+
 def test_output_survives_a_legacy_console_encoding(monkeypatch):
     raw = io.BytesIO()
     legacy = io.TextIOWrapper(raw, encoding="cp1252")  # what a Windows console uses

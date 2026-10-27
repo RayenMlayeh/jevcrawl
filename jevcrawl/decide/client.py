@@ -126,7 +126,9 @@ class DecisionClient:
     def _headers(self) -> dict[str, str]:
         key = self._config.api_key
         if not key:
-            raise JevAuthError("No Jev API key. Set the TYPESAFE_API_KEY environment variable.")
+            raise JevAuthError(
+                f"No Jev API key. Set the {self._config.api_key_name} environment variable."
+            )
         return {
             "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
@@ -165,11 +167,12 @@ class DecisionClient:
         jitter = 0.75 + 0.5 * self._rng()  # 0.75x .. 1.25x
         return BACKOFF_SECONDS[min(attempt, len(BACKOFF_SECONDS) - 1)] * jitter
 
-    @staticmethod
-    def _raise_if_fatal(response: httpx.Response) -> None:
+    def _raise_if_fatal(self, response: httpx.Response) -> None:
         status = response.status_code
         if status in (401, 403):
-            raise JevAuthError(f"The API key was rejected (HTTP {status}). Check TYPESAFE_API_KEY.")
+            raise JevAuthError(
+                f"The API key was rejected (HTTP {status}). Check {self._config.api_key_name}."
+            )
         if status in RETRY_STATUSES:
             return
         body = response.text[:2000]

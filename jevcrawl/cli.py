@@ -9,10 +9,19 @@ import sys
 from typing import Any
 
 from jevcrawl import __version__
-from jevcrawl.config import Config, load_config
+from jevcrawl.config import DEFAULT_API_KEY_NAME, Config, load_config, validate_api_key_name
 from jevcrawl.crawl import CrawlError, crawl, map_site, scrape
-from jevcrawl.crawl.errors import AUTH_HELP
+from jevcrawl.crawl.errors import auth_help
 from jevcrawl.log import configure_logging
+
+
+def _variable_name(value: str) -> str:
+    """argparse type for ``--api-key-name``. Only the validator's message is shown, never the
+    value, so a key pasted here by mistake is not echoed."""
+    try:
+        return validate_api_key_name(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from None
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -24,10 +33,25 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--version", action="version", version=f"jevcrawl {__version__}")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="log to stderr")
+
+    def key_name(p: argparse.ArgumentParser, default: Any) -> None:
+        p.add_argument(
+            "--api-key-name",
+            type=_variable_name,
+            default=default,
+            metavar="NAME",
+            help="environment variable that holds the Jev API key "
+            f"(default {DEFAULT_API_KEY_NAME})",
+        )
+
+    # Accepted before and after the command; SUPPRESS keeps a command's missing flag from
+    # overwriting a value given before it.
+    key_name(parser, None)
     sub = parser.add_subparsers(dest="command")
 
     def common(p: argparse.ArgumentParser) -> None:
         p.add_argument("--json", action="store_true", help="print the full result as JSON")
+        key_name(p, argparse.SUPPRESS)
 
     p = sub.add_parser("crawl", help="crawl from URL toward a goal")
     p.add_argument("url")
@@ -52,7 +76,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--max-usd", type=float, default=0.05)
     common(p)
 
-    sub.add_parser("doctor", help="check the API key and the connection to Jev")
+    p = sub.add_parser("doctor", help="check the API key and the connection to Jev")
+    key_name(p, argparse.SUPPRESS)
     return parser
 
 
@@ -132,16 +157,17 @@ def main(argv: list[str] | None = None) -> int:
     if args.command is None:
         from jevcrawl.mcp_server import main as serve
 
-        serve()
+        serve(api_key_name=args.api_key_name)
         return 0
+    config = load_config(api_key_name=args.api_key_name)
     if args.command == "doctor":
         from jevcrawl.doctor import run_doctor
 
-        return asyncio.run(run_doctor(load_config()))
+        return asyncio.run(run_doctor(config))
     try:
-        data = asyncio.run(_run(args, load_config()))
+        data = asyncio.run(_run(args, config))
         if data["stats"]["stopped_because"] == "auth_error":
-            raise CrawlError("auth_error", AUTH_HELP)
+            raise CrawlError("auth_error", auth_help(config.api_key_name))
     except CrawlError as exc:
         error = exc.to_dict()
         if args.json:

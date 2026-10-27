@@ -12,7 +12,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from jevcrawl.config import Config, Thresholds
-from jevcrawl.crawl.errors import AUTH_HELP, CrawlError
+from jevcrawl.crawl.errors import CrawlError, auth_help
 from jevcrawl.crawl.frontier import Frontier, FrontierItem, link_priority
 from jevcrawl.crawl.pack import pack_result, top_k_excerpts
 from jevcrawl.crawl.sitemap import sitemap_links, sitemap_urls
@@ -50,7 +50,7 @@ class Session:
     def decider(self, stats: Stats, max_decision_usd: float) -> Decider:
         """A decider for one crawl. Raises CrawlError if there is no API key."""
         if not self.config.api_key:
-            raise CrawlError("auth_error", AUTH_HELP)
+            raise CrawlError("auth_error", auth_help(self.config.api_key_name))
         if self._client is None:
             self._client = DecisionClient(self.config)
         if self._decisions is None:
