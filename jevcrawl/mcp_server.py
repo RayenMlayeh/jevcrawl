@@ -20,10 +20,13 @@ from jevcrawl.crawl import CrawlError
 from jevcrawl.crawl import crawl as run_crawl
 from jevcrawl.crawl import map_site as run_map
 from jevcrawl.crawl import scrape as run_scrape
-from jevcrawl.crawl.errors import AUTH_HELP
+from jevcrawl.crawl.errors import auth_help
 from jevcrawl.log import configure_logging, get_logger
 
 log = get_logger("mcp")
+
+# Set by ``main`` from ``--api-key-name``; None means the default variable.
+_api_key_name: str | None = None
 
 INSTRUCTIONS = (
     "jevcrawl crawls websites for you. A small decision model (Jev) picks which pages to read "
@@ -49,7 +52,7 @@ def _bad_argument(**checks: tuple[Any, float]) -> dict[str, str] | None:
 async def _guarded(operation: Callable[[Config], Awaitable[dict[str, Any]]]) -> dict[str, Any]:
     """Run a tool body, turning every expected failure into an error payload."""
     try:
-        config = load_config()
+        config = load_config(api_key_name=_api_key_name)
         data = await operation(config)
     except CrawlError as exc:
         return exc.to_dict()
@@ -57,7 +60,7 @@ async def _guarded(operation: Callable[[Config], Awaitable[dict[str, Any]]]) -> 
         log.exception("tool failed")
         return _error("internal_error", f"{type(exc).__name__}: {exc}")
     if (data.get("stats") or {}).get("stopped_because") == "auth_error":
-        return _error("auth_error", AUTH_HELP)
+        return _error("auth_error", auth_help(config.api_key_name))
     return data
 
 
@@ -170,8 +173,11 @@ async def map_urls(
     return await _guarded(operation)
 
 
-def main() -> None:
-    """Run the server on stdio (what ``jevcrawl`` with no arguments does)."""
+def main(api_key_name: str | None = None) -> None:
+    """Run the server on stdio (what ``jevcrawl`` with no command does). The key is read from
+    ``api_key_name`` instead of ``TYPESAFE_API_KEY`` when given."""
+    global _api_key_name
+    _api_key_name = api_key_name
     configure_logging("WARNING")
     mcp.run()
 

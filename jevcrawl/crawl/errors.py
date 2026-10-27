@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from jevcrawl.config import DEFAULT_API_KEY_NAME
+
 
 class CrawlError(Exception):
     """An expected error. Tools return ``{"error": code, "message": ...}`` instead of raising."""
@@ -16,7 +18,9 @@ class CrawlError(Exception):
         return {"error": self.code, "message": self.message}
 
 
-AUTH_HELP = (
-    "The Jev API key is missing or was rejected. Set the TYPESAFE_API_KEY environment variable "
-    "(create a key at https://console.typesafe.ai/)."
-)
+def auth_help(api_key_name: str = DEFAULT_API_KEY_NAME) -> str:
+    """What to tell the user when the key is missing or was rejected."""
+    return (
+        f"The Jev API key is missing or was rejected. Set the {api_key_name} environment "
+        "variable (create a key at https://console.typesafe.ai/)."
+    )

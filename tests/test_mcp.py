@@ -124,6 +124,29 @@ async def test_missing_key_is_a_payload(world, monkeypatch):
     assert data["error"] == "auth_error" and "TYPESAFE_API_KEY" in data["message"]
 
 
+async def test_server_reads_the_key_from_the_named_variable(world, monkeypatch):
+    monkeypatch.delenv("TYPESAFE_API_KEY")
+    monkeypatch.setenv("MY_JEV_KEY", "custom-key")
+    monkeypatch.setattr(mcp_server, "_api_key_name", "MY_JEV_KEY")
+    data = await mcp_server.crawl(GOAL, BASE + "/")
+    assert "error" not in data
+    assert world[1].headers[0]["authorization"] == "Bearer custom-key"
+
+
+async def test_unset_named_variable_is_a_payload_that_names_it(world, monkeypatch):
+    monkeypatch.setattr(mcp_server, "_api_key_name", "MY_JEV_KEY")  # TYPESAFE_API_KEY is set
+    data = await mcp_server.crawl(GOAL, BASE + "/")
+    assert data["error"] == "auth_error" and "MY_JEV_KEY" in data["message"]
+    assert world[1].call_count == 0
+
+
+def test_server_main_remembers_the_key_name(monkeypatch):
+    monkeypatch.setattr(mcp_server.mcp, "run", lambda: None)
+    monkeypatch.setattr(mcp_server, "_api_key_name", None)  # restored when the test ends
+    mcp_server.main(api_key_name="MY_JEV_KEY")
+    assert mcp_server._api_key_name == "MY_JEV_KEY"
+
+
 # --------------------------------------------------------------- doctor
 
 
@@ -131,7 +154,7 @@ async def test_doctor_ok(world, capsys):
     code = await run_doctor(Config(api_key="test-key"))
     out = capsys.readouterr().out
     assert code == 0 and "ok:" in out and "jev-latest" in out
-    assert "test-key" not in out and "set (8 characters)" in out
+    assert "test-key" not in out and "set (8 characters, TYPESAFE_API_KEY)" in out
     assert "https://api.typesafe.ai" in out and "jev-1.13.0" in out
 
 
@@ -150,5 +173,5 @@ def test_doctor_cli_command(world, capsys):
 
 def test_no_arguments_starts_the_server(monkeypatch):
     started = []
-    monkeypatch.setattr(mcp_server, "main", lambda: started.append(True))
+    monkeypatch.setattr(mcp_server, "main", lambda api_key_name=None: started.append(True))
     assert main([]) == 0 and started == [True]

@@ -206,6 +206,23 @@ jevcrawl doctor
 | `JEVCRAWL_RESPECT_ROBOTS` | skip URLs the site's `robots.txt` disallows (`0` turns it off) | `1` |
 | `JEVCRAWL_RENDER_JS` | render JavaScript-only pages when the `js` extra is installed (`0` turns it off) | `1` |
 
+The key is read from `TYPESAFE_API_KEY`. To read it from a differently named variable, for
+example when that name already holds another Typesafe key in your `.env`, pass the variable's
+**name** (not the key itself) with `--api-key-name`. It works before or after the command:
+
+```bash
+MY_JEV_KEY=<your key> jevcrawl crawl https://example.com --goal "..." --api-key-name MY_JEV_KEY
+claude mcp add jevcrawl -e MY_JEV_KEY=<your key> -- uvx jevcrawl --api-key-name MY_JEV_KEY
+```
+
+In an `mcpServers` config use `"args": ["jevcrawl", "--api-key-name", "MY_JEV_KEY"]`.
+
+The name must be a POSIX environment variable name: only uppercase letters, digits and
+underscores, and not starting with a digit. Anything else is refused with an error that says
+which rule failed (and never repeats the value, in case a key was pasted by mistake).
+`TYPESAFE_API_KEY` is used only when you give no name. If the variable you name is not set,
+jevcrawl reports the key as missing instead of falling back to `TYPESAFE_API_KEY`.
+
 Everything else (thresholds, links per page, concurrency) has a measured default in
 [`jevcrawl/config.py`](jevcrawl/config.py), and Python callers can pass their own `Config`.
 

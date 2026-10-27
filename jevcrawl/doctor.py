@@ -19,10 +19,12 @@ async def run_doctor(config: Config) -> int:
     _line("jevcrawl", f"{__version__} (python {platform.python_version()}, {sys.platform})")
     _line("endpoint", config.base_url)
     _line("model", config.model)
-    _line("api key", f"set ({len(config.api_key)} characters)" if config.api_key else "NOT SET")
+    name = config.api_key_name
+    state = f"set ({len(config.api_key)} characters, {name})" if config.api_key else "NOT SET"
+    _line("api key", state)
     _line("cache", config.cache_dir)
     if not config.api_key:
-        print("\nproblem: no API key. Set TYPESAFE_API_KEY (https://console.typesafe.ai/).")
+        print(f"\nproblem: no API key. Set {name} (https://console.typesafe.ai/).")
         return 1
     try:
         async with DecisionClient(config) as client:

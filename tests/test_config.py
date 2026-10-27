@@ -1,6 +1,14 @@
 from pathlib import Path
 
-from jevcrawl.config import DEFAULT_CACHE_DIR, Config, Thresholds, load_config
+import pytest
+
+from jevcrawl.config import (
+    DEFAULT_CACHE_DIR,
+    Config,
+    Thresholds,
+    load_config,
+    validate_api_key_name,
+)
 
 
 def test_defaults():
@@ -26,6 +34,61 @@ def test_the_four_environment_variables():
 
 def test_blank_values_mean_unset():
     assert load_config(env={"TYPESAFE_API_KEY": "  ", "JEVCRAWL_MODEL": ""}) == Config()
+
+
+def test_api_key_is_read_from_the_named_variable():
+    env = {"TYPESAFE_API_KEY": "default", "MY_JEV_KEY": " mine "}
+    named = load_config(env=env, api_key_name="MY_JEV_KEY")
+    assert (named.api_key, named.api_key_name) == ("mine", "MY_JEV_KEY")
+    unnamed = load_config(env=env)
+    assert (unnamed.api_key, unnamed.api_key_name) == ("default", "TYPESAFE_API_KEY")
+
+
+def test_a_named_variable_that_is_unset_does_not_fall_back_to_the_default():
+    c = load_config(env={"TYPESAFE_API_KEY": "default"}, api_key_name="MY_JEV_KEY")
+    assert (c.api_key, c.api_key_name) == (None, "MY_JEV_KEY")
+
+
+def test_the_default_variable_is_used_only_when_no_name_is_given():
+    env = {"TYPESAFE_API_KEY": "k"}
+    assert load_config(env=env, api_key_name=None).api_key == "k"
+    for explicit in ("", "  ", "other_name"):  # naming something else is never a silent default
+        with pytest.raises(ValueError, match="invalid API key name"):
+            load_config(env=env, api_key_name=explicit)
+
+
+@pytest.mark.parametrize("name", ["MY_JEV_KEY", "TYPESAFE_API_KEY", "_KEY", "K", "A1_B2", "__"])
+def test_posix_names_are_accepted(name):
+    assert validate_api_key_name(name) == name
+    assert load_config(env={name: "k"}, api_key_name=name).api_key == "k"
+
+
+@pytest.mark.parametrize(
+    ("name", "reasons"),
+    [
+        ("", ["it is empty"]),
+        ("1KEY", ["starts with a digit"]),
+        ("9LIVES", ["starts with a digit"]),
+        ("my_key", ["lowercase letters"]),
+        ("MyKey", ["lowercase letters"]),
+        ("MY-KEY", ["other than A-Z, 0-9 and _"]),
+        ("MY KEY", ["other than A-Z, 0-9 and _"]),
+        ("MY.KEY", ["other than A-Z, 0-9 and _"]),
+        ("KÉY", ["other than A-Z, 0-9 and _"]),
+        ("1my-key", ["starts with a digit", "lowercase letters", "other than A-Z, 0-9 and _"]),
+    ],
+)  # fmt: skip
+def test_names_that_are_not_posix_are_refused_and_never_repeated(name, reasons):
+    with pytest.raises(ValueError) as info:
+        validate_api_key_name(name)
+    message = str(info.value)
+    assert all(reason in message for reason in reasons)
+    assert "uppercase letters" in message and "may not start with a digit" in message
+    assert not name or name not in message  # a pasted key must not leak into the error
+    if "starts with a digit" not in reasons:
+        assert "it starts with a digit" not in message
+    if "lowercase letters" not in reasons:
+        assert "it has lowercase letters" not in message
 
 
 def test_thresholds_match_the_calibrated_values():
